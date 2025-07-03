@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CK.Core;
 
@@ -13,7 +15,7 @@ namespace CK.Core;
 /// <remarks>
 /// A ConcurrentDictionary caches the computed strings.
 /// </remarks>
-public static class TypeExtensions
+public static partial class TypeExtensions
 {
     /// <summary>
     /// A read only dictionary with the types that are aliased in C#.
@@ -46,8 +48,9 @@ public static class TypeExtensions
 
         public bool Equals( KeyType other ) => Type == other.Type && Flags == other.Flags;
 
-        public override int GetHashCode() => Type.GetHashCode() ^ Flags;
+        public override int GetHashCode() => HashCode.Combine( Type, Flags );
 
+        // ToCSharpName( withNamespace, typeDeclaration, useValueTupleParentheses )
         public KeyType( Type t, bool n, bool d, bool v )
         {
             Type = t;
@@ -73,15 +76,15 @@ public static class TypeExtensions
     /// Value tuples are expressed (by default) with the (lovely,brackets) but can use the explicit type: <see cref="ValueTuple{T1, T2}"/>
     /// instead. This is mainly because of pattern matching limitations in (at least) C# 8 (i.e. netcoreapp3.1).
     /// </remarks>
-    /// <param name="this">This type.</param>
+    /// <param name="type">This type.</param>
     /// <param name="withNamespace">False to not include the namespaces.</param>
     /// <param name="typeDeclaration">False to not include generic parameter names in the output (typically for typeof syntax).</param>
     /// <param name="useValueTupleParentheses">False to use the (safer) "System.ValueTuple&lt;&gt;" instead of the (tuple, with, parentheses, syntax).</param>
     /// <returns>The C# type name.</returns>
-    public static string ToCSharpName( this Type? @this, bool withNamespace = true, bool typeDeclaration = true, bool useValueTupleParentheses = true )
+    public static string ToCSharpName( this Type? type, bool withNamespace = true, bool typeDeclaration = true, bool useValueTupleParentheses = true )
     {
-        if( @this == null ) return "null";
-        return _names.GetOrAdd( new KeyType( @this, withNamespace, typeDeclaration, useValueTupleParentheses && !@this.ContainsGenericParameters ),
+        if( type == null ) return "null";
+        return _names.GetOrAdd( new KeyType( type, withNamespace, typeDeclaration, useValueTupleParentheses && !type.ContainsGenericParameters ),
                                 k => AppendCSharpName( new StringBuilder(), k.Type, (k.Flags & 1) != 0, (k.Flags & 8) != 0, (k.Flags & 256) != 0 ).ToString() );
     }
 
@@ -111,7 +114,7 @@ public static class TypeExtensions
                 t = t.GetElementType()!;
             }
             return b.Append( ToCSharpName( t, withNamespace, typeDeclaration, useValueTupleParentheses ) )
-                    .Append( new string( '*', stars ) );
+                    .Append( '*', stars );
         }
         var pathTypes = new Stack<Type>();
         pathTypes.Push( t );
@@ -182,5 +185,30 @@ public static class TypeExtensions
         }
         return b;
     }
+
+
+    /// <summary>
+    /// Gets the assembly qualified name without Culture, Version, PublicKeyToken, PublicKey and Custom assembly properties.
+    /// See https://learn.microsoft.com/en-us/dotnet/fundamentals/reflection/specifying-fully-qualified-type-names.
+    /// Simply calls <see cref="WeakenAssemblyQualifiedName(string)"/>.
+    /// </summary>
+    /// <param name="type">This type.</param>
+    /// <returns>The type name without assembly properties or null if <see cref="Type.AssemblyQualifiedName"/> is null (generic parameters).</returns>
+    public static string? GetWeakAssemblyQualifiedName( this Type type )
+    {
+        Throw.CheckNotNullArgument( type );
+        var aqn = type.AssemblyQualifiedName;
+        return aqn == null ? null : WeakenAssemblyQualifiedName( aqn );
+    }
+
+    /// <summary>
+    /// Removes the Culture, Version, PublicKeyToken, PublicKey and Custom assembly properties from a <see cref="Type.AssemblyQualifiedName"/>.
+    /// </summary>
+    /// <param name="assemblyQualifiedName">The assembly qualified name.</param>
+    /// <returns>The type name without assembly properties.</returns>
+    public static string WeakenAssemblyQualifiedName( string assemblyQualifiedName ) => _assemblyProperties().Replace( assemblyQualifiedName, string.Empty );
+
+    [GeneratedRegex( @",\s*(Culture|Version|PublicKey(Token)?|Custom)\s*=\s*[^]]*", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant )]
+    private static partial Regex _assemblyProperties();
 
 }
