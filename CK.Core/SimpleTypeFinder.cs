@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 
 namespace CK.Core;
 
@@ -43,11 +44,8 @@ public static class SimpleTypeFinder
     /// <summary>
     /// An implementation of <see cref="Resolver"/> that can be used to load types regardless of 
     /// the version, culture, architecture and public key token (strongly-named assemblies) of the type names.
-    /// (See <see cref="WeakenAssemblyQualifiedName"/>.)
+    /// Use <see cref="StandardResolver(string, bool)"/> on <see cref="TypeExtensions.GetWeakAssemblyQualifiedName(Type)"/>.
     /// </summary>
-    /// <remarks>
-    /// The type name used is: "NamespaceOfTheType.TypeName, AssemblyName".
-    /// </remarks>
     /// <returns>The type or null if not found and <paramref name="throwOnError"/> is false.</returns>
     /// <exception cref="TypeLoadException">
     /// When <paramref name="throwOnError"/> is true, always throws a type load exception.
@@ -55,16 +53,7 @@ public static class SimpleTypeFinder
     /// </exception>
     public static Type? WeakResolver( string assemblyQualifiedName, bool throwOnError )
     {
-        Type? done = StandardResolver( assemblyQualifiedName, false );
-        if( done == null )
-        {
-            if( !WeakenAssemblyQualifiedName( assemblyQualifiedName, out string weakTypeName ) && throwOnError )
-            {
-                Throw.ArgumentException( nameof( assemblyQualifiedName ), $"Invalid Assembly Qualified Name '{assemblyQualifiedName}." );
-            }
-            done = StandardResolver( weakTypeName, throwOnError );
-        }
-        return done;
+        return StandardResolver( TypeExtensions.WeakenAssemblyQualifiedName( assemblyQualifiedName ), throwOnError );
     }
 
     /// <summary>
@@ -102,26 +91,6 @@ public static class SimpleTypeFinder
     {
         Throw.CheckNotNullOrEmptyArgument( assemblyQualifiedName );
         Throw.CheckArgument( assemblyQualifiedName.Contains( ',' ) );
-    }
-
-    /// <summary>
-    /// Helper method to remove version, architecture, publicTokenKey and culture from the assembly qualified name into its assembly name passed as parameter.
-    /// "CK.Core.SimpleTypeFinder, CK.Core, version=1.0.0, culture='fr-FR'" gives "CK.Core.SimpleTypeFinder, CK.Core".
-    /// Used to remove strong name from an strongly-named assembly qualified name
-    /// </summary>
-    /// <param name="assemblyQualifiedName">The assembly qualified name to weaken.</param>
-    /// <param name="weakTypeName">The weakened assembly qualified name on output or an empty string.</param>
-    /// <returns>True if the split has been successfully done. False otherwise.</returns>
-    static public bool WeakenAssemblyQualifiedName( string assemblyQualifiedName, out string weakTypeName )
-    {
-        weakTypeName = String.Empty;
-        if( SplitAssemblyQualifiedName( assemblyQualifiedName, out string fullTypeName, out string assemblyFullName )
-            && SplitAssemblyFullName( assemblyFullName, out string assemblyName, out _ ) )
-        {
-            weakTypeName = fullTypeName + ", " + assemblyName;
-            return true;
-        }
-        return false;
     }
 
     /// <summary>

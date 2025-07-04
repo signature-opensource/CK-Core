@@ -9,8 +9,7 @@ public partial class Throw
     /// <summary>
     /// Assertion that captures the expression, file path and line number and throws a <see cref="CKException"/>.
     /// <para>
-    /// This is to be used in unit test: TUnit Assert.That is asynchronous (it must be <c>await</c>ed). But as TUnit
-    /// also handles synchronous tests, this can be used in simple, synchronous, tests.
+    /// This is mainly to be used in unit test.
     /// </para>
     /// <para>
     /// This SHOULD NOT be used in regular code: <see cref="Throw.DebugAssert(bool, string?, string?, int)"/> should

@@ -3,6 +3,8 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Linq;
+using System.Diagnostics;
 
 namespace CK.Core.Tests;
 
@@ -140,15 +142,18 @@ public class TypeExtensionTests
     }
 
     [Test]
-    public void ToCSharpName_Tuple_bug()
+    public void ToCSharpName_Tuple_long()
     {
         var mRef = GetType().GetMethod( "CreateLongRef", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static );
-        Throw.DebugAssert( mRef != null );
-        mRef.ReturnType.ToCSharpName().ShouldBe( "System.Tuple<T1,T2,T3,T4,T5,T6,T7,TRest>" );
+        mRef.ShouldNotBeNull()
+            .ReturnType.ToCSharpName().ShouldBe( "System.Tuple<T1,T2,T3,T4,T5,T6,T7,TRest>" );
 
         var mVal = GetType().GetMethod( "CreateLong", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static );
-        Throw.DebugAssert( mVal != null );
-        mVal.ReturnType.ToCSharpName().ShouldBe( "System.ValueTuple<T1,T2,T3,T4,T5,T6,T7,TRest>" );
+        mVal.ShouldNotBeNull()
+            .ReturnType.ToCSharpName().ShouldBe( "System.ValueTuple<T1,T2,T3,T4,T5,T6,T7,TRest>" );
+        // Note that ToCSharpName works even if here, AssemblyQualifiedName and FullName of the ReturnType are both null.
+        mVal.ReturnType.FullName.ShouldBeNull();
+        mVal.ReturnType.AssemblyQualifiedName.ShouldBeNull();
     }
 
     static ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> CreateLong<T1, T2, T3, T4, T5, T6, T7, TRest>( T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest )
@@ -158,4 +163,34 @@ public class TypeExtensionTests
     static Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> CreateLongRef<T1, T2, T3, T4, T5, T6, T7, TRest>( T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest )
         where TRest : ITuple
         => new Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>( item1, item2, item3, item4, item5, item6, item7, rest );
+
+    [Test]
+    public void GetWeakAssemblyQualifiedName_test()
+    {
+        foreach( var t in AppDomain.CurrentDomain.GetAssemblies().SelectMany( a => a.ExportedTypes ) )
+        {
+            var clean = t.GetWeakAssemblyQualifiedName().ShouldNotBeNull();
+            var resolved = Type.GetType( clean, throwOnError: true )!;
+            // No reference equality pitfalls.
+            (t == resolved).ShouldBe( t.Equals( resolved ) );
+
+            // Load contexts are different for some assemblies (VSTest, NUnit...).
+            // In this case, type instances are not the same but the type is actually the same.
+            // This is why CK.Engine never plays with LoadContext, we always work in the default load context.
+            if( t != resolved )
+            {
+                // No ActivityMonitor here...
+                Debug.WriteLine( $"Type '{t.ToCSharpName()}': WeakAssemblyQualifiedName='{clean}', resolved: '{resolved.ToCSharpName()}'." );
+                resolved.AssemblyQualifiedName.ShouldBe( t.AssemblyQualifiedName );
+
+                var resolved2 = Type.GetType( clean, throwOnError: true )!;
+                resolved2.ShouldBeSameAs( resolved );
+
+                var resolvedFromAQN = Type.GetType( t.AssemblyQualifiedName!, throwOnError: true )!;
+                resolvedFromAQN.ShouldBeSameAs( resolved );
+
+            }
+        }
+    }
+
 }

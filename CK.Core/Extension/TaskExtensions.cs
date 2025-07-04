@@ -3,8 +3,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
-
 namespace CK.Core;
 
 /// <summary>
@@ -12,17 +10,6 @@ namespace CK.Core;
 /// </summary>
 public static class TaskExtensions
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="task"></param>
-    /// <param name="millisecondsTimeout"></param>
-    /// <param name="cancellation"></param>
-    /// <returns></returns>
-    [Obsolete( "Use WaitForTaskCompletionAsync instead.", error: true )]
-    public static Task<bool> WaitAsync( this Task task, int millisecondsTimeout, CancellationToken cancellation = default )
-        => WaitForTaskCompletionAsync( task, millisecondsTimeout, cancellation );
-
     /// <summary>
     /// Asynchronously waits for an existing task to be completed within a maximum amount of time (and/or as long
     /// as the <paramref name="cancellation"/> is not signaled), whatever the task is and without throwing exceptions.
