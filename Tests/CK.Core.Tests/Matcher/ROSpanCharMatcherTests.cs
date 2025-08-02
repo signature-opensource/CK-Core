@@ -270,7 +270,6 @@ public class ROSpanCharMatcherTests
         }
     }
 
-
     [Test]
     public void OpenExpectations_are_pooled_objects()
     {

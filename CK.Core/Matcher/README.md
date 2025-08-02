@@ -18,15 +18,15 @@ public struct UInt32
 ```
 
 It's convenient... but this pattern has a big problem: 
- - the string doesn't support a suffix: TryParse("5454 ", out _ ) fails because of the final little blank.
+ - the string doesn't support a suffix: TryParse("5454 ", out _ ) fails because of the final little white space.
  - this doesn't tell us how many characters have been matched (because they only match what you provide).
 
 This prohibits chaining these methods together to parse small, not too complex grammars in a simple way: in fact,
 they cannot be combined but rather used with "splits" on specific delimiting characters (which, besides limiting the
 flexibility of the patterns, systematically introduces several consecutive passes on the string).
 
-The Matcher pattern does the same thing except that the principle is to advance a read head (or at least to be able to advance a
-read head knowing the length of the match) in order to chain the calls and "advance in the grammar". 
+The Matcher pattern does the same thing except that the principle is to advance a read head (or at least to be able
+to advance a read head knowing the length of the match) in order to chain the calls and "advance in the grammar". 
 
 Below is an example of a simple code that parses a LED state (Color and State) and advances a `ReadOnlySpan<char>` read head
 passed by reference (otherwise the head would not advance!).
@@ -203,7 +203,8 @@ static public DateTimeStamp Parse( ReadOnlySpan<char> s )
 For well known general purpose types, you may want to expose the `TryMatch` methods as extension methods of the "head" but if you
 can change the code, the `public static bool TryMatch(...)` is better located in the type itself (next to `TryParse` and `Parse`).
 
-Extension methods are already defined for .Net types (see [ReadOnlySpanCharExtensions.cs](ReadOnlySpanCharExtensions.cs)) like this one for instance:
+Extension methods are already defined for .Net types (see [ReadOnlySpanCharExtensions.cs](ReadOnlySpanCharExtensions.cs))
+like this one for instance:
 
 ```csharp
 /// <summary>

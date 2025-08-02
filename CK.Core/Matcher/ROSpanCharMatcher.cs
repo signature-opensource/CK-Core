@@ -257,12 +257,12 @@ public ref partial struct ROSpanCharMatcher
     /// <summary>
     /// Gets whether this matcher has unsatisfied expectations.
     /// </summary>
-    public bool HasError => _tracker.ErrorCount > 0;
+    public readonly bool HasError => _tracker.ErrorCount > 0;
 
     /// <summary>
     /// Gets or sets whether only one expectation or error must be kept.
     /// </summary>
-    public bool SingleExpectationMode
+    public readonly bool SingleExpectationMode
     {
         get => _tracker.SingleExpectationMode;
         set => _tracker.SingleExpectationMode = value;
@@ -281,7 +281,7 @@ public ref partial struct ROSpanCharMatcher
     /// has few chances to used here).
     /// </remarks>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public bool AddExpectation( string expect, [CallerMemberName] string? callerName = null ) => _tracker.AddExpOrErr( false, Head.Length, expect, callerName! );
+    public readonly bool AddExpectation( string expect, [CallerMemberName] string? callerName = null ) => _tracker.AddExpOrErr( false, Head.Length, expect, callerName! );
 
     /// <summary>
     /// Adds an error. <paramref name="error"/>> must be written with trailing dot (just like usual error or log messages).
@@ -295,7 +295,7 @@ public ref partial struct ROSpanCharMatcher
     /// has few chances to used here).
     /// </remarks>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public bool AddError( string error, [CallerMemberName] string? callerName = null ) => _tracker.AddExpOrErr( true, Head.Length, error, callerName! );
+    public readonly bool AddError( string error, [CallerMemberName] string? callerName = null ) => _tracker.AddExpOrErr( true, Head.Length, error, callerName! );
 
     /// <summary>
     /// Adds an expectation. <paramref name="expect"/>> must be written without "expect" word, only with the
@@ -311,7 +311,7 @@ public ref partial struct ROSpanCharMatcher
     /// or other explicit delegate signatures that has few chances to used here).
     /// </remarks>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public bool AddExpectation( int offset, string expect, [CallerMemberName] string? callerName = null ) => _tracker.AddExpOrErr( false, Head.Length - offset, expect, callerName! );
+    public readonly bool AddExpectation( int offset, string expect, [CallerMemberName] string? callerName = null ) => _tracker.AddExpOrErr( false, Head.Length - offset, expect, callerName! );
 
     /// <summary>
     /// Adds an error. <paramref name="error"/>> must be written with trailing dot (just like usual error or log messages).
@@ -326,22 +326,14 @@ public ref partial struct ROSpanCharMatcher
     /// has few chances to used here).
     /// </remarks>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public bool AddError( int offset, string error, [CallerMemberName] string? callerName = null ) => _tracker.AddExpOrErr( true, Head.Length - offset, error, callerName! );
+    public readonly bool AddError( int offset, string error, [CallerMemberName] string? callerName = null ) => _tracker.AddExpOrErr( true, Head.Length - offset, error, callerName! );
 
     /// <summary>
     /// Clears any recorded expectations and always returns true.
     /// </summary>
     /// <returns>Always true so it can be directly returned by the TryMatch function.</returns>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public bool SetSuccess() => _tracker.ClearExpectations();
-
-    /// <summary>
-    /// Clears any recorded expectations and returns true.
-    /// </summary>
-    /// <returns>Always true so it can be directly returned by the TryMatch function.</returns>
-    [Obsolete( "Use SetSuccess() method instead.", true )]
-    [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public bool ClearExpectations() => _tracker.ClearExpectations();
+    public readonly bool SetSuccess() => _tracker.ClearExpectations();
 
     /// <summary>
     /// Opens a group of subordinated expectations that must be disposed.
@@ -367,14 +359,14 @@ public ref partial struct ROSpanCharMatcher
     /// <param name="expectHeader">Optional header for the subordinated expectations.</param>
     /// <param name="callerName">Method name of the caller (automatically set by the compiler).</param>
     /// <returns>The disposable to close the group.</returns>
-    public IDisposable OpenExpectations( string? expectHeader = null, [CallerMemberName] string? callerName = null ) => _tracker.OpenSubTracker( Head.Length, expectHeader, callerName! );
+    public readonly IDisposable OpenExpectations( string? expectHeader = null, [CallerMemberName] string? callerName = null ) => _tracker.OpenSubTracker( Head.Length, expectHeader, callerName! );
 
     /// <summary>
     /// Gets the list of expectations if any: the expected position, the expected expression and name of the
     /// method that failed, and its depth in the parsing.
     /// </summary>
     /// <returns>The set of expectations.</returns>
-    public IEnumerable<(int Pos, int Depth, bool IsError, string Expectation, string CallerName)> GetRawErrors() => _tracker.GetErrors( AllText.Length );
+    public readonly IEnumerable<(int Pos, int Depth, bool IsError, string Expectation, string CallerName)> GetRawErrors() => _tracker.GetErrors( AllText.Length );
 
     ref struct LineColumnFinder
     {
@@ -435,7 +427,7 @@ public ref partial struct ROSpanCharMatcher
     /// </summary>
     /// <param name="maxDepth">Optional depth restriction.</param>
     /// <returns>The set of errors.</returns>
-    public Memory<(int Pos, int Line, int Col, int Depth, bool IsError, string Expectation, string CallerName)> GetErrors( int maxDepth = 0 )
+    public readonly Memory<(int Pos, int Line, int Col, int Depth, bool IsError, string Expectation, string CallerName)> GetErrors( int maxDepth = 0 )
     {
         int count = _tracker.ErrorCount;
         if( count == 0 ) return Memory<(int, int, int, int, bool, string, string)>.Empty;
@@ -599,12 +591,12 @@ public ref partial struct ROSpanCharMatcher
     /// <param name="allowNull">True to allow 'null' token.</param>
     /// <returns>True on success, false otherwise.</returns>
     public bool TrySkipJSONQuotedString( bool allowNull = false )
-        => Head.TrySkipJSONQuotedString( allowNull )
+        => Head.TrySkipJsonQuotedString( allowNull )
             ? SetSuccess()
             : AddExpectation( allowNull ? "JSON string or null" : "JSON string" );
 
     /// <summary>
-    /// Tries to match a JSON quoted string. Invalid escaped characters (like \') are invalid and will fail.
+    /// Tries to match a JSON quoted string. Invalid escaped characters (like \' or \x) are invalid and will fail.
     /// See the string definition https://www.json.org/json-en.html.
     /// </summary>
     /// <param name="content">Extracted content.</param>
@@ -680,7 +672,7 @@ public ref partial struct ROSpanCharMatcher
     /// </summary>
     /// <returns>True on success, false otherwise.</returns>
     public bool TrySkipJSONTerminalValue()
-        => Head.TrySkipJSONTerminalValue()
+        => Head.TrySkipJsonTerminalValue()
             ? SetSuccess()
             : AddExpectation( "null, true, false, a floating number or a \"string\"" );
 

@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CK.Core;
 
@@ -53,9 +55,26 @@ public static class ReadOnlySpanCharExtensions
     /// <param name="comparison">How to compare.</param>
     /// <returns>True on success, false otherwise.</returns>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public static bool TryMatch( this ref ReadOnlySpan<char> head, char value, StringComparison comparison = StringComparison.Ordinal )
+    public static bool TryMatch( this ref ReadOnlySpan<char> head, char value, StringComparison comparison )
     {
         if( head.StartsWith( MemoryMarshal.CreateReadOnlySpan( ref value, 1 ), comparison ) )
+        {
+            head = head.Slice( 1 );
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to match a character.
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="value">The character to match.</param>
+    /// <returns>True on success, false otherwise.</returns>
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public static bool TryMatch( this ref ReadOnlySpan<char> head, char value )
+    {
+        if( head.Length > 0 && head[0] == value )
         {
             head = head.Slice( 1 );
             return true;
@@ -390,15 +409,20 @@ public static class ReadOnlySpanCharExtensions
         return true;
     }
 
+    [Obsolete( "Renamed to TrySkipJsonQuotedString." )]
+    public static bool TrySkipJSONQuotedString( this ref ReadOnlySpan<char> head, bool allowNull = false )
+        => TrySkipJsonQuotedString( ref head, allowNull );
+
     /// <summary>
-    /// Tries to skip a quoted string. This handles escaped \" and \\ but not other
+    /// Tries to skip a quoted string. This handles escaped \" and \\ but no other
     /// escaped characters: the string may be invalid regarding JSON string grammar.
-    /// See the string definition https://www.json.org/json-en.html.
+    /// See the string definition https://www.json.org/json-en.html, this can skip a
+    /// "string" that would fail the TryMatchJSONQuotedString methods.
     /// </summary>
     /// <param name="head">This head.</param>
     /// <param name="allowNull">True to allow 'null' token.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public static bool TrySkipJSONQuotedString( this ref ReadOnlySpan<char> head, bool allowNull = false )
+    public static bool TrySkipJsonQuotedString( this ref ReadOnlySpan<char> head, bool allowNull = false )
     {
         if( head.Length == 0 ) return false;
         if( head[0] != '"' )
@@ -411,22 +435,198 @@ public static class ReadOnlySpanCharExtensions
             int idx = h.IndexOf( '"' );
             if( idx < 0 ) return false;
             int rIdx = idx - 1;
-            while( rIdx > 0 && h[idx - 1] == '\\' ) rIdx--;
-            if( ((idx - rIdx) & 1) == 0 ) break;
+            while( rIdx >= 0 && h[rIdx] == '\\' ) rIdx--;
+            int escapeCountPlusQuote = idx - rIdx;
             h = h.Slice( idx + 1 );
+            if( (escapeCountPlusQuote & 1) == 1 )
+            {
+                head = h;
+                return true;
+            }
+            // This quote is escaped. Skip it.
         }
-        head = h.Slice( 1 );
+    }
+
+    /// <summary>
+    /// Tries to match 'null' or a JSON quoted string.
+    /// See <see cref="TryMatchJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>.
+    /// <para>
+    /// On 'null', this returns true and the <paramref name="destination"/> is untouched.
+    /// </para>
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="destination">
+    /// The string builder into which the successfully evaluated content will be appended.
+    /// Will be allocated only if needed (may be allocated on failure but will be empty).
+    /// </param>
+    /// <returns>True on success, false otherwise.</returns>
+    public static bool TryMatchNulableJsonQuotedString( this ref ReadOnlySpan<char> head,
+                                                         ref StringBuilder? destination )
+    {
+        if( head.Length == 0 ) return false;
+        if( head[0] != '"' )
+        {
+            return TryMatch( ref head, "null" );
+        }
+        return TryMatchJsonQuotedString( ref head, ref destination );
+
+    }
+
+    /// <summary>
+    /// Tries to match a JSON quoted string. All \uXXXX are evaluated, invalid escaped characters (like \' or \x) will fail,
+    /// only \r, \n, \b, \t, \f, \uXXXX, \\, \/ and \" are valid and are evaluated (Note: ECMA-262 allows encoding U+000B as "\v",
+    /// but ECMA-404 does not, so we handle it).
+    /// See the string definition https://www.json.org/json-en.html.
+    /// <para>
+    /// On error, the <paramref name="destination"/> is unchanged.
+    /// </para>
+    /// <para>
+    /// To allow the 'null' token, use <see cref="TryMatchNulableJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="destination">
+    /// The string builder into which the successfully evaluated content will be appended.
+    /// Will be allocated only if needed (may be allocated on failure but will be empty).
+    /// </param>
+    /// <returns>True on success, false otherwise.</returns>
+    static bool TryMatchJsonQuotedString( ref ReadOnlySpan<char> head, ref StringBuilder? destination )
+    {
+        if( head.Length == 0 || head[0] != '"' )
+        {
+            return false;
+        }
+        // This restores the destination on error.
+        static bool Error( int destinationStartIndex, StringBuilder? destination )
+        {
+            if( destinationStartIndex >= 0 )
+            {
+                Throw.DebugAssert( destination != null );
+                destination.Length = destinationStartIndex;
+            }
+            return false;
+        }
+
+        int destinationStartIndex = -1;
+        int i = 1;
+        int len = head.Length - 1;
+        while( len >= 0 )
+        {
+            if( len == 0 ) return Error( destinationStartIndex, destination );
+            char c = head[i++];
+            --len;
+            if( c == '"' ) break;
+            if( c == '\\' )
+            {
+                if( len == 0 ) return Error( destinationStartIndex, destination );
+                if( destinationStartIndex == -1 )
+                {
+                    Throw.DebugAssert( i >= 2 );
+                    destination ??= new StringBuilder( i + 254 );
+                    destinationStartIndex = destination.Length;
+                    destination.Append( head.Slice( 1, i - 2 ) );
+                }
+                switch( c = head[i++] )
+                {
+                    case 'r': c = '\r'; break;
+                    case 'n': c = '\n'; break;
+                    case 'b': c = '\b'; break;
+                    case 't': c = '\t'; break;
+                    case 'f': c = '\f'; break;
+                    case 'v': c = '\v'; break; // Allowed by ECMA-262.
+                    case 'u':
+                    {
+                        var h = head.Slice( i );
+                        if( !h.TryMatchHexNumber( out var u, 4, 4 ) )
+                        {
+                            return Error( destinationStartIndex, destination );
+                        }
+                        len -= 4;
+                        i += 4;
+                        c = (char)u;
+                        break;
+                    }
+                    case '\\': // These are the only other valid escaped characters in JSON.
+                    case '"':
+                    case '/': break;
+                    default:
+                    {
+                        return Error( destinationStartIndex, destination );
+                    }
+                }
+            }
+            if( destinationStartIndex >= 0 )
+            {
+                Throw.DebugAssert( destination != null );
+                destination.Append( c );
+            }
+        }
+        if( destinationStartIndex == -1 )
+        {
+            int sLen = i - 2;
+            if( sLen > 0 )
+            {
+                destination ??= new StringBuilder( sLen );
+                destination.Append( head.Slice( 1, sLen ) );
+            }
+        }
+        head = head.Slice( i );
         return true;
     }
+
+    /// <summary>
+    /// Tries to match and evaluate a JSON quoted string.
+    /// See <see cref="TryMatchJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>.
+    /// <para>
+    /// The head must not be on 'null'. Use <see cref="TryMatchNullableJsonQuotedString(ref ReadOnlySpan{char}, out string?)"/>
+    /// to handle 'null' token.
+    /// </para>
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="result">The evaluated string on success, null otherwise.</param>
+    /// <returns>True on success, false otherwise.</returns>
+    public static bool TryMatchJsonQuotedString( this ref ReadOnlySpan<char> head, [NotNullWhen( true )] out string? result )
+    {
+        StringBuilder? b = null;
+        if( TryMatchJsonQuotedString( ref head, ref b ) )
+        {
+            result = b?.ToString() ?? string.Empty;
+            return true;
+        }
+        result = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to match a 'null' or a JSON quoted string and evaluate it.
+    /// See <see cref="TryMatchJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>.
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="result">The result string. Null on 'null' token.</param>
+    /// <returns>True on success, false otherwise.</returns>
+    public static bool TryMatchNullableJsonQuotedString( this ref ReadOnlySpan<char> head, out string? result )
+    {
+        StringBuilder? b = null;
+        if( TryMatchJsonQuotedString( ref head, ref b ) )
+        {
+            result = b?.ToString() ?? string.Empty;
+            return true;
+        }
+        result = null;
+        return head.TryMatch( "null" );
+    }
+
+    [Obsolete( "Renamed to TrySkipJsonTerminalValue." )]
+    public static bool TrySkipJSONTerminalValue( this ref ReadOnlySpan<char> head ) => TrySkipJsonTerminalValue( ref head );
 
     /// <summary>
     /// Tries to skip a JSON terminal value: a "string", null, a number (double value), true or false.
     /// </summary>
     /// <param name="head">This head.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public static bool TrySkipJSONTerminalValue( this ref ReadOnlySpan<char> head )
+    public static bool TrySkipJsonTerminalValue( this ref ReadOnlySpan<char> head )
     {
-        return head.TrySkipJSONQuotedString( true )
+        return head.TrySkipJsonQuotedString( true )
                 || head.TrySkipDouble()
                 || head.TryMatch( "true" )
                 || head.TryMatch( "false" );

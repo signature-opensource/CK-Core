@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using Shouldly;
 using System.Diagnostics;
+using System;
 
 namespace CK.Core.Tests;
 
 [TestFixture]
-public class MatchJSONTests
+public class ROSpanCharMatcherJsonTests
 {
     [Test]
-    public void match_JSON_objects()
+    public void match_Json_objects()
     {
         {
             var j = @"{""A"":1,""B"":2}";
@@ -42,7 +43,7 @@ public class MatchJSONTests
     }
 
     [Test]
-    public void match_JSON_empty_array_or_objects()
+    public void match_Json_empty_array_or_objects()
     {
         {
             var j = @"{}";
@@ -72,7 +73,7 @@ public class MatchJSONTests
 /* 3 */ 1.2     
 //...
 /*" )]
-    public void match_JSON_skips_JS_comments( string jsonWithComment )
+    public void match_Json_skips_JS_comments( string jsonWithComment )
     {
         var m = new ROSpanCharMatcher( jsonWithComment );
         m.TryMatchAnyJSON( out object? o ).ShouldBeTrue();
@@ -83,7 +84,7 @@ public class MatchJSONTests
     [TestCase( "{", "@0-Any JSON token or object|@1--JSON object properties" )]
     [TestCase( "[", "@0-Any JSON token or object|@1--JSON array values" )]
     [TestCase( "[null,,]", "@0-Any JSON token or object|@1--JSON array values|@6---Any JSON token or object|@6----String 'true'|@6----String 'false'|@6----JSON string or null|@6----Floating number" )]
-    public void TryMatchAnyJSON_has_detailed_errors( string s, string errors )
+    public void TryMatchAnyJson_has_detailed_errors( string s, string errors )
     {
         var m = new ROSpanCharMatcher( s );
         m.TryMatchAnyJSON( out _ ).ShouldBeFalse();
