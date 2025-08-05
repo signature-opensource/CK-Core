@@ -2,13 +2,13 @@ using NUnit.Framework;
 using Shouldly;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Threading.Tasks;
-using static CK.Core.Tests.TypeExtensionTests;
 
 namespace CK.Core.Tests;
 
@@ -45,7 +45,7 @@ public class ReadOnlySpanCharExtensionsTests
 
     [TestCase( "", "" )]
     [TestCase( "a", "a" )]
-    [TestCase( """\t\r\n\u0000\v""", "\t\r\n\u0000\v" )]
+    [TestCase( """\t\r\n\u0020\v""", "\t\r\n\u0020\v" )]
     public void TryMatchJsonQuotedString( string jsonContent, string expected )
     {
         var s = '"' + jsonContent + '"';
@@ -65,6 +65,21 @@ public class ReadOnlySpanCharExtensionsTests
         head.Length.ShouldBe( 0 );
         parsed.ShouldBe( expected );
     }
+
+    [Test]
+    public void hexadecimal_numbers_test()
+    {
+        // Hexadecimal string can be smaller than expected.
+        byte.TryParse( "F", NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var parsedOneDigit ).ShouldBeTrue();
+        parsedOneDigit.ShouldBe( 15 );
+        byte.TryParse( "FF", NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var parsedTwoDigits ).ShouldBeTrue();
+        parsedTwoDigits.ShouldBe( 255 );
+        // But not grater (and this is where the match and forward pattern is useful...).
+        byte.TryParse( "FFF", NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var _ ).ShouldBeFalse();
+
+
+    }
+
 
     [TestCase( 0 )]
     [TestCase( 42 )]
@@ -106,6 +121,133 @@ public class ReadOnlySpanCharExtensionsTests
             head.TrySkipJsonQuotedString().ShouldBeTrue( attempt );
             head.Length.ShouldBe( 0, attempt );
         }
+    }
+
+    [Test]
+    public void TryMatchInteger_out_of_ranges_test()
+    {
+        var negative = "-1".AsSpan();
+        negative.TryMatchInteger( out byte _ ).ShouldBeFalse();
+        negative.Length.ShouldBe( 2 );
+        negative.TryMatchInteger( out ushort _ ).ShouldBeFalse();
+        negative.Length.ShouldBe( 2 );
+        negative.TryMatchInteger( out uint _ ).ShouldBeFalse();
+        negative.Length.ShouldBe( 2 );
+        negative.TryMatchInteger( out ulong _ ).ShouldBeFalse();
+        negative.Length.ShouldBe( 2 );
+        negative.TryMatchInteger( out UInt128 _ ).ShouldBeFalse();
+        negative.Length.ShouldBe( 2 );
+        negative.TryMatchInteger( out sbyte _ ).ShouldBeTrue();
+        negative.Length.ShouldBe( 0 );
+
+        var maxInt = int.MaxValue.ToString().AsSpan();
+        maxInt.TryMatchInteger( out sbyte _ ).ShouldBeFalse();
+        maxInt.TryMatchInteger( out byte _ ).ShouldBeFalse();
+        maxInt.TryMatchInteger( out short _ ).ShouldBeFalse();
+        maxInt.TryMatchInteger( out ushort _ ).ShouldBeFalse();
+        maxInt.TryMatchInteger( out int _ ).ShouldBeTrue();
+        maxInt.Length.ShouldBe( 0 );
+
+        var minInt = int.MinValue.ToString().AsSpan();
+        minInt.TryMatchInteger( out sbyte _ ).ShouldBeFalse();
+        minInt.TryMatchInteger( out byte _ ).ShouldBeFalse();
+        minInt.TryMatchInteger( out short _ ).ShouldBeFalse();
+        minInt.TryMatchInteger( out ushort _ ).ShouldBeFalse();
+        minInt.TryMatchInteger( out int _ ).ShouldBeTrue();
+        maxInt.Length.ShouldBe( 0 );
+
+        var maxInt128 = Int128.MaxValue.ToString().AsSpan();
+        maxInt128.TryMatchInteger( out sbyte _ ).ShouldBeFalse();
+        maxInt128.TryMatchInteger( out byte _ ).ShouldBeFalse();
+        maxInt128.TryMatchInteger( out short _ ).ShouldBeFalse();
+        maxInt128.TryMatchInteger( out ushort _ ).ShouldBeFalse();
+        maxInt128.TryMatchInteger( out uint _ ).ShouldBeFalse();
+        maxInt128.TryMatchInteger( out int _ ).ShouldBeFalse();
+        maxInt128.TryMatchInteger( out ulong _ ).ShouldBeFalse();
+        maxInt128.TryMatchInteger( out long _ ).ShouldBeFalse();
+        maxInt128.TryMatchInteger( out Int128 _ ).ShouldBeTrue();
+        maxInt128.Length.ShouldBe( 0 );
+
+        var minInt128 = Int128.MinValue.ToString().AsSpan();
+        minInt128.TryMatchInteger( out sbyte _ ).ShouldBeFalse();
+        minInt128.TryMatchInteger( out byte _ ).ShouldBeFalse();
+        minInt128.TryMatchInteger( out short _ ).ShouldBeFalse();
+        minInt128.TryMatchInteger( out ushort _ ).ShouldBeFalse();
+        minInt128.TryMatchInteger( out uint _ ).ShouldBeFalse();
+        minInt128.TryMatchInteger( out int _ ).ShouldBeFalse();
+        minInt128.TryMatchInteger( out ulong _ ).ShouldBeFalse();
+        minInt128.TryMatchInteger( out long _ ).ShouldBeFalse();
+        minInt128.TryMatchInteger( out Int128 _ ).ShouldBeTrue();
+        minInt128.Length.ShouldBe( 0 );
+    }
+
+
+
+    [TestCase( byte.MaxValue )]
+    [TestCase( byte.MinValue )]
+    [TestCase( 42 )]
+    public void TryMatchInteger_byte_test( byte v )
+    {
+        CheckBinaryInteger( v );
+    }
+
+    [TestCase( sbyte.MaxValue )]
+    [TestCase( sbyte.MinValue )]
+    [TestCase( 0 )]
+    [TestCase( -42 )]
+    public void TryMatchInteger_sbyte_test( sbyte v )
+    {
+        CheckBinaryInteger( v );
+    }
+
+    [Test] // NUnit fails to handle uint cast.
+    public void TryMatchInteger_uint_test()
+    {
+        CheckBinaryInteger( uint.MaxValue );
+        CheckBinaryInteger( uint.MinValue );
+        CheckBinaryInteger( (uint)0 );
+        CheckBinaryInteger( (uint)35416416 );
+    }
+
+    [Test] // Int128.MaxValue is not a constant.
+    public void TryMatchInteger_Int128_test()
+    {
+        CheckBinaryInteger( Int128.MaxValue );
+        CheckBinaryInteger( Int128.MinValue );
+        CheckBinaryInteger( Int128.Zero );
+        CheckBinaryInteger( (Int128)35416416 );
+        CheckBinaryInteger( (Int128)(-676716616416) );
+    }
+
+    [Test]
+    public void TryMatchInteger_UInt128_test()
+    {
+        CheckBinaryInteger( UInt128.MaxValue );
+        CheckBinaryInteger( UInt128.MinValue );
+        CheckBinaryInteger( UInt128.Zero );
+        CheckBinaryInteger( (UInt128)35416415661616 );
+    }
+
+    [TestCase( int.MaxValue )]
+    [TestCase( int.MinValue )]
+    [TestCase( 0 )]
+    [TestCase( -3712 )]
+    public void TryMatchInteger_int_test( int v )
+    {
+        CheckBinaryInteger( v );
+    }
+
+    static void CheckBinaryInteger<T>( T v ) where T : IBinaryInteger<T>
+    {
+        var head = v.ToString( null, CultureInfo.InvariantCulture ).AsSpan();
+        CheckBinaryInteger( head, v );
+    }
+
+    static void CheckBinaryInteger<T>( ReadOnlySpan<char> head, T v ) where T : IBinaryInteger<T>
+    {
+        head.TryMatchInteger<T>( out var backV ).ShouldBeTrue();
+        backV.ShouldBe( v );
+        head.Length.ShouldBe( 0 );
     }
 
 }

@@ -194,23 +194,23 @@ D  NOTX", @"
     }
 
     [TestCase( "{", @"
-@1,1 - Expected: Any JSON token or object (TryMatchAnyJSON)
-  @1,2 - Expected: JSON object properties (TryMatchJSONObjectContent)" )]
+@1,1 - Expected: Any JSON token or object (TryMatchAnyJson)
+  @1,2 - Expected: JSON object properties (TryMatchJsonObjectContent)" )]
     [TestCase( "[", @"
-@1,1 - Expected: Any JSON token or object (TryMatchAnyJSON)
-  @1,2 - Expected: JSON array values (TryMatchJSONArrayContent)" )]
+@1,1 - Expected: Any JSON token or object (TryMatchAnyJson)
+  @1,2 - Expected: JSON array values (TryMatchJsonArrayContent)" )]
     [TestCase( "[null,,]", @"
-@1,1 - Expected: Any JSON token or object (TryMatchAnyJSON)
-  @1,2 - Expected: JSON array values (TryMatchJSONArrayContent)
-    @1,7 - Expected: Any JSON token or object (TryMatchAnyJSON)
+@1,1 - Expected: Any JSON token or object (TryMatchAnyJson)
+  @1,2 - Expected: JSON array values (TryMatchJsonArrayContent)
+    @1,7 - Expected: Any JSON token or object (TryMatchAnyJson)
                        String 'true' (TryMatch)
                  Or:   String 'false' (TryMatch)
-                 Or:   JSON string or null (TryMatchJSONQuotedString)
-                 Or:   Floating number (TryMatchDouble)" )]
-    public void TryMatchAnyJSON_errors( string s, string message )
+                 Or:   Valid JSON string or null (TryMatchJsonQuotedString)
+                 Or:   Floating number 'Double' (TryMatchFloatingNumber)" )]
+    public void TryMatchAnyJson_errors( string s, string message )
     {
         var m = new ROSpanCharMatcher( s );
-        m.TryMatchAnyJSON( out _ ).ShouldBeFalse();
+        m.TryMatchAnyJson( out _ ).ShouldBeFalse();
         m.HasError.ShouldBeTrue();
         m.GetErrorMessage().ShouldBe( message.ReplaceLineEndings().Trim() );
     }

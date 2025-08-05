@@ -16,7 +16,7 @@ public class ROSpanCharMatcherJsonTests
         {
             var j = @"{""A"":1,""B"":2}";
             var m = new ROSpanCharMatcher( j );
-            m.TryMatchAnyJSON( out object? o ).ShouldBeTrue();
+            m.TryMatchAnyJson( out object? o ).ShouldBeTrue();
             var list = o as List<(string Name, object Value)>;
             Debug.Assert( list != null );
             list.Select( k => k.Name + '|' + k.Value ).Concatenate().ShouldBe( "A|1, B|2" );
@@ -24,7 +24,7 @@ public class ROSpanCharMatcherJsonTests
         {
             var j = @"{ ""A"" : 1.0, ""B"" : 2 }";
             var m = new ROSpanCharMatcher( j );
-            m.TryMatchAnyJSON( out object? o ).ShouldBeTrue();
+            m.TryMatchAnyJson( out object? o ).ShouldBeTrue();
             var list = o as List<(string Name, object Value)>;
             Debug.Assert( list != null );
             list.Select( k => k.Name + '|' + k.Value ).Concatenate().ShouldBe( "A|1, B|2" );
@@ -32,7 +32,7 @@ public class ROSpanCharMatcherJsonTests
         {
             var j = @"{ ""A"" : [ ""a"" , 3 , null , 6], ""B"" : [ 2, 3, ""XX"" ] }";
             var m = new ROSpanCharMatcher( j );
-            m.TryMatchAnyJSON( out object? o ).ShouldBeTrue();
+            m.TryMatchAnyJson( out object? o ).ShouldBeTrue();
             var list = o as List<(string Name, object Value)>;
             Debug.Assert( list != null );
             list.Select( k => k.Name
@@ -48,7 +48,7 @@ public class ROSpanCharMatcherJsonTests
         {
             var j = @"{}";
             var m = new ROSpanCharMatcher( j );
-            m.TryMatchAnyJSON( out object? o ).ShouldBeTrue();
+            m.TryMatchAnyJson( out object? o ).ShouldBeTrue();
             var list = o as List<(string Name, object Value)>;
             Debug.Assert( list != null );
             list.ShouldBeEmpty();
@@ -56,7 +56,7 @@ public class ROSpanCharMatcherJsonTests
         {
             var j = @"[]";
             var m = new ROSpanCharMatcher( j );
-            m.TryMatchAnyJSON( out object? o ).ShouldBeTrue();
+            m.TryMatchAnyJson( out object? o ).ShouldBeTrue();
             var list = o as List<object?>;
             Debug.Assert( list != null );
             list.ShouldBeEmpty();
@@ -76,24 +76,24 @@ public class ROSpanCharMatcherJsonTests
     public void match_Json_skips_JS_comments( string jsonWithComment )
     {
         var m = new ROSpanCharMatcher( jsonWithComment );
-        m.TryMatchAnyJSON( out object? o ).ShouldBeTrue();
+        m.TryMatchAnyJson( out object? o ).ShouldBeTrue();
         o.ShouldBe( 1.2 );
     }
 
 
     [TestCase( "{", "@0-Any JSON token or object|@1--JSON object properties" )]
     [TestCase( "[", "@0-Any JSON token or object|@1--JSON array values" )]
-    [TestCase( "[null,,]", "@0-Any JSON token or object|@1--JSON array values|@6---Any JSON token or object|@6----String 'true'|@6----String 'false'|@6----JSON string or null|@6----Floating number" )]
+    [TestCase( "[null,,]", "@0-Any JSON token or object|@1--JSON array values|@6---Any JSON token or object|@6----String 'true'|@6----String 'false'|@6----Valid JSON string or null|@6----Floating number 'Double'" )]
     public void TryMatchAnyJson_has_detailed_errors( string s, string errors )
     {
         var m = new ROSpanCharMatcher( s );
-        m.TryMatchAnyJSON( out _ ).ShouldBeFalse();
+        m.TryMatchAnyJson( out _ ).ShouldBeFalse();
         m.HasError.ShouldBeTrue();
         m.GetRawErrors().Select( e => $"@{e.Pos}{new string( '-', e.Depth + 1 )}{e.Expectation}" ).Concatenate( '|' ).ShouldBe( errors );
 
         m.SetSuccess();
         m.SingleExpectationMode = true;
-        m.TryMatchAnyJSON( out _ ).ShouldBeFalse();
+        m.TryMatchAnyJson( out _ ).ShouldBeFalse();
         m.HasError.ShouldBeTrue();
         m.GetRawErrors().Single().Expectation.ShouldBe( errors.Split( '|' )[0].Remove( 0, 3 ) );
     }

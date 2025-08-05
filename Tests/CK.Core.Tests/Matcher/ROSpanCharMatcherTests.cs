@@ -48,11 +48,11 @@ public class ROSpanCharMatcherTests
 
     [TestCase( "0|", 0x0UL, '|' )]
     [TestCase( "AG", 0xAUL, 'G' )]
-    [TestCase( "cd", 0xCUL, 'd' )]
+    [TestCase( "cX", 0xCUL, 'X' )]
     public void matching_hex_number_one_digit( string s, ulong v, char end )
     {
         var m = new ROSpanCharMatcher( s );
-        m.TryMatchHexNumber( out ulong value, 1, 1 ).ShouldBeTrue();
+        m.TryMatchHexNumber( out ulong value ).ShouldBeTrue();
         value.ShouldBe( v );
         m.HasError.ShouldBeFalse();
         m.Head.Length.ShouldBePositive();
@@ -60,13 +60,12 @@ public class ROSpanCharMatcherTests
     }
 
     [TestCase( "not a hex." )]
-    [TestCase( "FA12 but we want 5 digits min." )]
     public void matching_hex_number_failures( string s )
     {
         var m = new ROSpanCharMatcher( s );
-        m.TryMatchHexNumber( out ulong value, 5, 5 ).ShouldBeFalse();
+        m.TryMatchHexNumber( out ulong value ).ShouldBeFalse();
         m.Head.Length.ShouldBe( s.Length );
-        m.GetRawErrors().Single().Expectation.ShouldBe( "5 digits hexadecimal number" );
+        m.GetRawErrors().Single().Expectation.ShouldBe( "Hexadecimal number" );
         m.GetRawErrors().Single().CallerName.ShouldBe( "TryMatchHexNumber" );
     }
 
@@ -105,7 +104,7 @@ public class ROSpanCharMatcherTests
     {
         var m = new ROSpanCharMatcher( "X3712Y" );
         m.TryMatch( 'X' ).ShouldBeTrue();
-        m.TryMatchInt32( out var i ).ShouldBeTrue();
+        m.TryMatchInteger( out int i ).ShouldBeTrue();
         i.ShouldBe( 3712 );
         m.TryMatch( 'Y' ).ShouldBeTrue();
     }
@@ -116,33 +115,9 @@ public class ROSpanCharMatcherTests
         var m = "X  012345678901234567890123456789  Y".AsSpan();
         m.TryMatch( 'X' ).ShouldBeTrue();
         m.SkipWhiteSpaces().ShouldBeTrue();
-
-        m.TryMatchDigits( out var digits ).ShouldBeTrue();
-        digits.ToString().ShouldBe( "012345678901234567890123456789" );
-
+        m.TrySkipDigits( 0 ).ShouldBeTrue();
         m.SkipWhiteSpaces().ShouldBeTrue();
         m.TryMatch( 'Y' ).ShouldBeTrue();
-    }
-
-    [TestCase( "00003712 -000435 056", "AllowLeadingZeros" )]
-    [TestCase( "3712 -435 56", "" )]
-    public void matching_integers_with_min_max_values( string s, string withZeros )
-    {
-        bool allowZeros = withZeros == "AllowLeadingZeros";
-        var m = new ROSpanCharMatcher( "3712 -435 56" );
-        int i;
-        m.TryMatchInt32( out i, -500, -400, allowZeros ).ShouldBeFalse();
-        m.TryMatchInt32( out i, 0, 3712, allowZeros ).ShouldBeTrue();
-        i.ShouldBe( 3712 );
-        m.TrySkipWhiteSpaces().ShouldBeTrue();
-        m.TryMatchInt32( out i, 0, allowLeadingZeros: allowZeros ).ShouldBeFalse();
-        m.TryMatchInt32( out i, -500, -400, allowZeros ).ShouldBeTrue();
-        i.ShouldBe( -435 );
-        m.TrySkipWhiteSpaces().ShouldBeTrue();
-        m.TryMatchInt32( out i, 1000, 2000, allowZeros ).ShouldBeFalse();
-        m.TryMatchInt32( out i, 56, 56, allowZeros ).ShouldBeTrue();
-        i.ShouldBe( 56 );
-        m.Head.IsEmpty.ShouldBeTrue();
     }
 
     delegate T ROSpanCharMatcherFunc<T>( ROSpanCharMatcher m );
@@ -153,16 +128,14 @@ public class ROSpanCharMatcherTests
         var m = new ROSpanCharMatcher( "~" );
 
         CheckMatchError( m, m => m.TryMatch( 'a' ), "Character 'a'" );
-        CheckMatchError( m, m => m.TryMatchHexNumber( out _ ), "Hexadecimal number (1 to 16 digits)" );
-        CheckMatchError( m, m => m.TryMatchHexNumber( out _, 2, 6 ), "Hexadecimal number (2 to 6 digits)" );
-        CheckMatchError( m, m => m.TryMatchHexNumber( out _, 3, 3 ), "3 digits hexadecimal number" );
-        CheckMatchError( m, m => m.TryMatchInt32( out _ ), "Signed integer between -2147483648 and 2147483647 (without leading zeros)" );
-        CheckMatchError( m, m => m.TryMatchInt32( out _, 0, 500 ), "Integer between 0 and 500 (without leading zeros)" );
-        CheckMatchError( m, m => m.TryMatchInt32( out _, -2, -1 ), "Signed integer between -2 and -1 (without leading zeros)" );
-        CheckMatchError( m, m => m.TryMatchInt32( out _, 0, 500, allowLeadingZeros: true ), "Integer between 0 and 500" );
-        CheckMatchError( m, m => m.TryMatchInt32( out _, -2, -1, allowLeadingZeros: true ), "Signed integer between -2 and -1" );
+        CheckMatchError( m, m => m.TryMatchHexNumber( out _ ), "Hexadecimal number" );
+        CheckMatchError( m, m => m.TryMatchHexNumber( out _ ), "Hexadecimal number" );
+        CheckMatchError( m, m => m.TryMatchHexNumber( out _), "Hexadecimal number" );
+        CheckMatchError( m, m => m.TryMatchInteger( out int _ ), "A Int32" );
+        CheckMatchError( m, m => m.TryMatchInteger( out ulong _ ), "A UInt64" );
+        CheckMatchError( m, m => m.TryMatchInteger( out sbyte _ ), "A SByte" );
         CheckMatchError( m, m => m.TryMatchGuid( out _ ), "Guid" );
-        CheckMatchError( m, m => m.TryMatchDouble( out _ ), "Floating number" );
+        CheckMatchError( m, m => m.TryMatchFloatingNumber( out double _ ), "Floating number 'Double'" );
         CheckMatchError( m, m => m.TrySkipWhiteSpaces(), "At least one white space" );
     }
 
@@ -202,7 +175,7 @@ public class ROSpanCharMatcherTests
             m.Head.IsEmpty.ShouldBeTrue();
 
             m.Head = m.AllText.Slice( 1 );
-            m.TryMatchDouble( out var parsed ).ShouldBeTrue();
+            m.TryMatchFloatingNumber( out double parsed ).ShouldBeTrue();
             parsed.ShouldBe( d, 1f );
             m.TryMatch( 'S' ).ShouldBeTrue();
             m.Head.IsEmpty.ShouldBeTrue();
@@ -213,7 +186,7 @@ public class ROSpanCharMatcherTests
             m.Head.IsEmpty.ShouldBeTrue();
 
             m.Head = m.AllText;
-            m.TryMatchDouble( out var parsed ).ShouldBeTrue();
+            m.TryMatchFloatingNumber( out double parsed ).ShouldBeTrue();
             parsed.ShouldBe( d, 1f );
             m.Head.IsEmpty.ShouldBeTrue();
         }

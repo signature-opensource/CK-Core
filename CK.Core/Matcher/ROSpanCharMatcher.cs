@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -515,35 +516,18 @@ public ref partial struct ROSpanCharMatcher
     public bool SkipWhiteSpaces() => Head.SkipWhiteSpaces();
 
     /// <summary>
-    /// Tries to match an Int32 value. A signed integer starts with a '-' and must not be followed by white spaces.
-    /// If the value is too big for an Int32, it fails.
-    /// <para>
-    /// When <paramref name="allowLeadingZeros"/> is false, the value must not start with '0' ('0' is valid but '0d', where d is any digit, is not)
-    /// and '-0' is valid but '-0d' (where d is any digit) is not.
-    /// </para>
+    /// See <see cref="ReadOnlySpanCharExtensions.TryMatchInteger{T}(ref ReadOnlySpan{char}, out T)"/>.
     /// </summary>
-    /// <param name="i">The result integer. 0 on failure.</param>
-    /// <param name="minValue">Optional minimal value.</param>
-    /// <param name="maxValue">Optional maximal value.</param>
-    /// <param name="allowLeadingZeros">True to allow leading zeros.</param>
+    /// <param name="i">The result value.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public bool TryMatchInt32( out int i, int minValue = int.MinValue, int maxValue = int.MaxValue, bool allowLeadingZeros = false )
+    public bool TryMatchInteger<T>( [MaybeNullWhen( false )] out T value )
+        where T : IBinaryInteger<T>
     {
-        if( Head.TryMatchInt32( out i, minValue, maxValue, allowLeadingZeros ) )
+        if( Head.TryMatchInteger( out value ) )
         {
             return SetSuccess();
         }
-        string s;
-        if( minValue >= 0 )
-        {
-            s = $"Integer between {minValue} and {maxValue}";
-        }
-        else
-        {
-            s = $"Signed integer between {minValue} and {maxValue}";
-        }
-        if( !allowLeadingZeros ) s += " (without leading zeros)";
-        return AddExpectation( s );
+        return AddExpectation( $"A {typeof(T).Name}" );
     }
 
     /// <summary>
@@ -551,31 +535,30 @@ public ref partial struct ROSpanCharMatcher
     /// </summary>
     /// <returns>True on success, false otherwise.</returns>
     public bool TrySkipDouble()
-        => Head.TrySkipDouble()
+        => Head.TrySkipFloatingNumber()
             ? SetSuccess()
             : AddExpectation( $"Floating number" );
 
     /// <summary>
-    /// Tries to match a double value. See <see cref="ReadOnlySpanCharExtensions.TryMatchDouble(ref ReadOnlySpan{char}, out double)"/>.
+    /// See <see cref="ReadOnlySpanCharExtensions.TryMatchFloatingNumber{T}(ref ReadOnlySpan{char}, out T)"/>
     /// </summary>
     /// <param name="value">The result double. 0.0 on failure.</param>
     /// <returns></returns>
-    public bool TryMatchDouble( out double value )
-        => Head.TryMatchDouble( out value )
+    public bool TryMatchFloatingNumber<T>( [MaybeNullWhen( false )] out T value )
+        where T : IFloatingPoint<T>
+        => Head.TryMatchFloatingNumber( out value )
             ? SetSuccess()
-            : AddExpectation( "Floating number" );
+            : AddExpectation( $"Floating number '{typeof(T).Name}'" );
 
     /// <summary>
-    /// Tries to parse an hexadecimal values of 1 to 16 '0'-'9', 'A'-'F' or 'a'-'f' digits.
+    /// See <see cref="TryMatchHexNumber(out ulong, bool)"/>.
     /// </summary>
     /// <param name="value">Resulting value on success.</param>
-    /// <param name="minDigit">Minimal digit count. Must be between 1 and 16 and smaller or equal to <paramref name="maxDigit"/>.</param>
-    /// <param name="maxDigit">Maximal digit count. Must be between 1 and 16.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public bool TryMatchHexNumber( out ulong value, int minDigit = 1, int maxDigit = 16 )
-        => Head.TryMatchHexNumber( out value, minDigit, maxDigit )
+    public bool TryMatchHexNumber( out ulong value, bool allowLessDigits = true )
+        => Head.TryMatchHexNumber( out value, allowLessDigits )
             ? SetSuccess()
-            : AddExpectation( minDigit == maxDigit ? $"{minDigit} digits hexadecimal number" : $"Hexadecimal number ({minDigit} to {maxDigit} digits)" );
+            : AddExpectation( "Hexadecimal number" );
 
     /// <summary>
     /// Skips any white spaces or JS comments (//... or /* ... */) and always returns true.
@@ -584,94 +567,37 @@ public ref partial struct ROSpanCharMatcher
     public bool SkipWhiteSpacesAndJSComments() => Head.SkipWhiteSpacesAndJSComments();
 
     /// <summary>
-    /// Tries to skip a quoted string. This handles escaped \" and \\ but not other
-    /// escaped characters: the string may be invalid regarding JSON string grammar.
-    /// See the string definition https://www.json.org/json-en.html.
+    /// See <see cref="ReadOnlySpanCharExtensions.TrySkipJsonQuotedString(ref ReadOnlySpan{char}, bool)"/>.
     /// </summary>
     /// <param name="allowNull">True to allow 'null' token.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public bool TrySkipJSONQuotedString( bool allowNull = false )
+    public bool TrySkipJsonQuotedString( bool allowNull = false )
         => Head.TrySkipJsonQuotedString( allowNull )
             ? SetSuccess()
             : AddExpectation( allowNull ? "JSON string or null" : "JSON string" );
 
     /// <summary>
-    /// Tries to match a JSON quoted string. Invalid escaped characters (like \' or \x) are invalid and will fail.
-    /// See the string definition https://www.json.org/json-en.html.
+    /// See <see cref="ReadOnlySpanCharExtensions.TryMatchJsonQuotedString(ref ReadOnlySpan{char}, out string?)"/>.
     /// </summary>
     /// <param name="content">Extracted content.</param>
     /// <param name="allowNull">True to allow 'null' token.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public bool TryMatchJSONQuotedString( out string? content, bool allowNull = false )
+    public bool TryMatchJsonQuotedString( out string? content, bool allowNull = false )
     {
-        content = null;
-        bool isEmpty = Head.Length == 0;
-        if( isEmpty || Head[0] != '"' )
+        if( allowNull
+             ? Head.TryMatchNullableJsonQuotedString( out content )
+             : Head.TryMatchJsonQuotedString( out content ) )
         {
-            if( !isEmpty && allowNull && Head.TryMatch( "null" ) )
-            {
-                return SetSuccess();
-            }
-            return AddExpectation( allowNull ? "JSON string or null" : "JSON string" );
+            return SetSuccess();
         }
-        int i = 1;
-        int len = Head.Length - 1;
-        StringBuilder? b = null;
-        while( len >= 0 )
-        {
-            if( len == 0 ) return AddExpectation( 1, "Ending quote" ); ;
-            char c = Head[i++];
-            --len;
-            if( c == '"' ) break;
-            if( c == '\\' )
-            {
-                if( len == 0 ) return AddExpectation( i - 1, "Valid JSON escape character" ); ;
-                if( b == null )
-                {
-                    b = new StringBuilder();
-                    b.Append( Head.Slice( 1, i - 1 ) );
-                }
-                switch( (c = Head[i++]) )
-                {
-                    case 'r': c = '\r'; break;
-                    case 'n': c = '\n'; break;
-                    case 'b': c = '\b'; break;
-                    case 't': c = '\t'; break;
-                    case 'f': c = '\f'; break;
-                    case 'u':
-                    {
-                        var h = Head.Slice( i );
-                        if( !h.TryMatchHexNumber( out var u, 4, 4 ) )
-                        {
-                            return AddExpectation( i - 1, "4 digits hexadecimal number" );
-                        }
-                        len -= 4;
-                        i += 4;
-                        c = (char)u;
-                        break;
-                    }
-                    case '\\': // These are the only other valid escaped characters in JSON.
-                    case '"':
-                    case '/': break;
-                    default:
-                    {
-                        return AddExpectation( i - 1, "Valid JSON escape character" );
-                    }
-                }
-            }
-            if( b != null ) b.Append( c );
-        }
-        if( b != null ) content = b.ToString();
-        else content = new string( Head.Slice( 1, i - 2 ) );
-        Head = Head.Slice( i );
-        return SetSuccess();
+        return AddExpectation( allowNull ? "Valid JSON string or null" : "Valid JSON string" );
     }
 
     /// <summary>
-    /// Tries to skip a JSON terminal value: a "string", null, a number (double value), true or false.
+    /// See <see cref="ReadOnlySpanCharExtensions.TrySkipJsonTerminalValue(ref ReadOnlySpan{char})"/>.
     /// </summary>
     /// <returns>True on success, false otherwise.</returns>
-    public bool TrySkipJSONTerminalValue()
+    public bool TrySkipJsonTerminalValue()
         => Head.TrySkipJsonTerminalValue()
             ? SetSuccess()
             : AddExpectation( "null, true, false, a floating number or a \"string\"" );
@@ -681,7 +607,7 @@ public ref partial struct ROSpanCharMatcher
     /// </summary>
     /// <param name="value">The parsed value.</param>
     /// <returns>True if a JSON value has been matched, false otherwise.</returns>
-    public bool TryMatchJSONTerminalValue( out object? value )
+    public bool TryMatchJsonTerminalValue( out object? value )
     {
         if( TryMatch( "true" ) )
         {
@@ -691,11 +617,11 @@ public ref partial struct ROSpanCharMatcher
         {
             value = false;
         }
-        else if( TryMatchJSONQuotedString( out string? s, true ) )
+        else if( TryMatchJsonQuotedString( out string? s, true ) )
         {
             value = s;
         }
-        else if( TryMatchDouble( out double d ) )
+        else if( TryMatchFloatingNumber( out double d ) )
         {
             value = d;
         }
@@ -708,12 +634,12 @@ public ref partial struct ROSpanCharMatcher
     }
 
     /// <summary>
-    /// Matches a very simple version of a JSON object content: this match stops at the first closing }.
+    /// Matches a very simple version of a JSON object content: this match stops at the first closing brace '}'.
     /// White spaces and JS comments (//... or /* ... */) are skipped.
     /// </summary>
     /// <param name="o">The read object on success as a list of tuples.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool TryMatchJSONObjectContent( [NotNullWhen( true )] out List<(string, object?)>? o )
+    public bool TryMatchJsonObjectContent( [NotNullWhen( true )] out List<(string, object?)>? o )
     {
         o = new List<(string, object?)>();
         var savedHead = Head;
@@ -726,14 +652,14 @@ public ref partial struct ROSpanCharMatcher
                 {
                     return SetSuccess();
                 }
-                if( !TryMatchJSONQuotedString( out string? propName ) )
+                if( !TryMatchJsonQuotedString( out string? propName ) )
                 {
                     AddExpectation( "Quoted JSON Property Name" );
                     goto error;
                 }
                 Debug.Assert( propName != null );
                 Head.SkipWhiteSpacesAndJSComments();
-                if( !TryMatch( ':' ) || !TryMatchAnyJSON( out object? value ) ) goto error;
+                if( !TryMatch( ':' ) || !TryMatchAnyJson( out object? value ) ) goto error;
                 o.Add( (propName, value) );
                 Head.SkipWhiteSpacesAndJSComments();
                 // This accepts a trailing comma at the end of a property list: ..."a":0,} is not an error.
@@ -752,7 +678,7 @@ public ref partial struct ROSpanCharMatcher
     /// </summary>
     /// <param name="value">The list of objects on success.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public bool TryMatchJSONArrayContent( [NotNullWhen( true )] out List<object?>? value )
+    public bool TryMatchJsonArrayContent( [NotNullWhen( true )] out List<object?>? value )
     {
         value = new List<object?>();
         var savedHead = Head;
@@ -765,7 +691,7 @@ public ref partial struct ROSpanCharMatcher
                 {
                     return SetSuccess();
                 }
-                if( !TryMatchAnyJSON( out object? cell ) ) goto error;
+                if( !TryMatchAnyJson( out object? cell ) ) goto error;
                 value.Add( cell );
                 Head.SkipWhiteSpacesAndJSComments();
                 // Allow trailing comma: ,] is valid.
@@ -788,7 +714,7 @@ public ref partial struct ROSpanCharMatcher
     /// a double, string, boolean or null (for null).
     /// </param>
     /// <returns>True on success, false on error.</returns>
-    public bool TryMatchAnyJSON( out object? value )
+    public bool TryMatchAnyJson( out object? value )
     {
         value = null;
         var savedHead = Head;
@@ -797,19 +723,19 @@ public ref partial struct ROSpanCharMatcher
             Head.SkipWhiteSpacesAndJSComments();
             if( Head.TryMatch( '{' ) )
             {
-                if( !TryMatchJSONObjectContent( out var c ) ) goto error;
+                if( !TryMatchJsonObjectContent( out var c ) ) goto error;
                 value = c;
                 Debug.Assert( !HasError );
                 return true;
             }
             if( Head.TryMatch( '[' ) )
             {
-                if( !TryMatchJSONArrayContent( out var t ) ) goto error;
+                if( !TryMatchJsonArrayContent( out var t ) ) goto error;
                 value = t;
                 Debug.Assert( !HasError );
                 return true;
             }
-            if( TryMatchJSONTerminalValue( out value ) )
+            if( TryMatchJsonTerminalValue( out value ) )
             {
                 Debug.Assert( !HasError );
                 return true;
