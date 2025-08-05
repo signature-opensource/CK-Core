@@ -57,26 +57,9 @@ public static class ReadOnlySpanCharExtensions
     /// <param name="comparison">How to compare.</param>
     /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public static bool TryMatch( this ref ReadOnlySpan<char> head, char value, StringComparison comparison )
+    public static bool TryMatch( this ref ReadOnlySpan<char> head, char value, StringComparison comparison = StringComparison.Ordinal )
     {
         if( head.StartsWith( MemoryMarshal.CreateReadOnlySpan( ref value, 1 ), comparison ) )
-        {
-            head = head.Slice( 1 );
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Tries to match a character.
-    /// </summary>
-    /// <param name="head">This head.</param>
-    /// <param name="value">The character to match.</param>
-    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
-    [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    public static bool TryMatch( this ref ReadOnlySpan<char> head, char value )
-    {
-        if( head.Length > 0 && head[0] == value )
         {
             head = head.Slice( 1 );
             return true;
