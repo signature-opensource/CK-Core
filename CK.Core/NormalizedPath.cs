@@ -541,29 +541,17 @@ public readonly partial struct NormalizedPath : IEquatable<NormalizedPath>, ICom
         int len = _parts[0].Length + count;
         while( count > 1 ) len += _parts[--count].Length;
         Debug.Assert( _path != null );
-        var o = _option;
-        string p;
-        switch( o )
+        string p = _option switch
         {
-            case NormalizedPathRootKind.None:
-                p = _path.Substring( len );
-                break;
-            case NormalizedPathRootKind.RootedBySeparator:
-                p = DirectorySeparatorChar + _path.Substring( len + 1 );
-                break;
-            case NormalizedPathRootKind.RootedByDoubleSeparator:
-                p = string.Concat( DoubleDirectorySeparatorString, _path.AsSpan( len + 2 ) );
-                break;
-            case NormalizedPathRootKind.RootedByURIScheme:
-            case NormalizedPathRootKind.RootedByFirstPart:
-                p = _path.Substring( len );
-                o = NormalizedPathRootKind.None;
-                break;
-            default:
-                p = Throw.NotSupportedException<string>();
-                break;
-        }
-        return new NormalizedPath( parts, p, o );
+            NormalizedPathRootKind.None or NormalizedPathRootKind.RootedByURIScheme or NormalizedPathRootKind.RootedByFirstPart
+                => _path.Substring( len ),
+            NormalizedPathRootKind.RootedBySeparator
+                => _path.Substring( len + 1 ),
+            NormalizedPathRootKind.RootedByDoubleSeparator
+                => _path.Substring( len + 2 ),
+            _ => Throw.NotSupportedException<string>(),
+        };
+        return new NormalizedPath( parts, p, NormalizedPathRootKind.None );
     }
 
     /// <summary>

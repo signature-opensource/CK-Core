@@ -475,7 +475,7 @@ public class NormalizedPathTests
     [TestCase( "a/b", 0, "b" )]
     [TestCase( "a/b", 1, "a" )]
     [TestCase( "/a/b/c/", 1, "/a/c" )]
-    [TestCase( "//a/b/c/", 0, "//b/c" )]
+    [TestCase( "//a/b/c/", 0, "b/c" )]
     public void RemovePart_at_work( string path, int index, string result )
     {
         if( result == "ArgumentOutOfRangeException" )
@@ -490,14 +490,54 @@ public class NormalizedPathTests
         }
     }
 
+    [Test]
+    public void RemoveFirstPart_removes_the_root()
+    {
+        NormalizedPath winRootedPath = @"C:\dev\test.txt";
+        NormalizedPath unixRootedPath = "/usr/dev/test.txt";
+        NormalizedPath httpRootedPath = "http://dev/test.txt";
+        NormalizedPath uncRootedPath = "//mount/dev/test.txt";
+
+        winRootedPath.IsRooted.ShouldBeTrue();
+        unixRootedPath.IsRooted.ShouldBeTrue();
+
+        var winPart = winRootedPath.RemoveFirstPart();
+        winPart.IsRooted.ShouldBeFalse();
+        winPart.ToString().ShouldBe( "dev/test.txt" );
+        winPart = winRootedPath.RemoveFirstPart( 2 );
+        winPart.IsRooted.ShouldBeFalse();
+        winPart.ToString().ShouldBe( "test.txt" );
+
+        var unixPart = unixRootedPath.RemoveFirstPart();
+        unixPart.IsRooted.ShouldBeFalse();
+        unixPart.ToString().ShouldBe( "dev/test.txt" );
+        unixPart = unixRootedPath.RemoveFirstPart( 2 );
+        unixPart.IsRooted.ShouldBeFalse();
+        unixPart.ToString().ShouldBe( "test.txt" );
+
+        var httpPart = httpRootedPath.RemoveFirstPart();
+        httpPart.IsRooted.ShouldBeFalse();
+        httpPart.ToString().ShouldBe( "dev/test.txt" );
+        httpPart = httpRootedPath.RemoveFirstPart( 2 );
+        httpPart.IsRooted.ShouldBeFalse();
+        httpPart.ToString().ShouldBe( "test.txt" );
+
+        var uncPart = uncRootedPath.RemoveFirstPart();
+        uncPart.IsRooted.ShouldBeFalse();
+        uncPart.ToString().ShouldBe( "dev/test.txt" );
+        uncPart = uncRootedPath.RemoveFirstPart( 2 );
+        uncPart.IsRooted.ShouldBeFalse();
+        uncPart.ToString().ShouldBe( "test.txt" );
+    }
+
     [TestCase( "", 0, 0, "ArgumentOutOfRangeException" )]
     [TestCase( "a", 0, 1, "" )]
     [TestCase( "a/b", 0, 2, "" )]
     [TestCase( "a", -1, 1, "ArgumentOutOfRangeException" )]
     [TestCase( "a/b", 1, 0, "a/b" )]
     [TestCase( "a/b", 2, 0, "a/b" )]
-    [TestCase( "//a/b/c/d", 0, 1, "//b/c/d" )]
-    [TestCase( "/a/b/c/d", 0, 2, "/c/d" )]
+    [TestCase( "//a/b/c/d", 0, 1, "b/c/d" )]
+    [TestCase( "/a/b/c/d", 0, 2, "c/d" )]
     [TestCase( "//a/b/c/d", 1, 2, "//a/d" )]
     [TestCase( "/a/b/c/d", 1, 2, "/a/d" )]
     [TestCase( "/a/b/c/d", 2, 2, "/a/b" )]
