@@ -6,7 +6,19 @@ environment:
     secure: 8VAzdXgUQaJyFoU3WLf2iPFV/8zPDm9qV4TfOpx8/rg=
 test: false
 on_finish:
-- ps: Get-ChildItem -Recurse *.log -exclude LastRun.log  -ErrorAction SilentlyContinue | % { Push-AppveyorArtifact $_.FullName }
+- ps: >-
+    Write-Host "Collecting logs..."
+
+    Get-ChildItem -Recurse *.log -Exclude LastRun.log -ErrorAction SilentlyContinue |
+
+    ForEach-Object {
+        $filePath = $_.FullName;
+        $fileName = $_.FullName.Replace('/', '_').Replace('\', '_').Replace(':', '');
+        $fileName = $fileName.Substring($fileName.IndexOf("_Tests_") + 7).Replace("_Logs_Text_", "-");
+        Push-AppveyorArtifact $_.FullName -FileName $fileName
+    }
+
+    Write-Host "Logs uploaded."
 init:
 - git config --global core.autocrlf true
 build_script:
