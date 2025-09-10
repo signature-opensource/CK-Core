@@ -284,7 +284,7 @@ public class ROSpanCharMatcherTests
         var m = new ROSpanCharMatcher( "" );
         var g1 = m.OpenExpectations();
         var g2 = m.OpenExpectations();
-        Util.Invokable( () => g1.Dispose() ).ShouldThrow<InvalidOperationException>();
+        Should.Throw<InvalidOperationException>( () => g1.Dispose() );
         g2.Dispose();
         g1.Dispose();
     }

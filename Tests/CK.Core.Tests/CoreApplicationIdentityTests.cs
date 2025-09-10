@@ -9,12 +9,12 @@ namespace CK.Core.Tests;
 [TestFixture]
 public class CoreApplicationIdentityTests
 {
-    [SetUp]
-    public void ResetStaticIdentity()
+    public static bool ResetStaticIdentity()
     {
-        var m = typeof( CoreApplicationIdentity ).GetMethod( "Reset", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static );
-        Assume.That( m != null, "This test can only run in DEBUG mode." );
+        System.Reflection.MethodInfo? m = typeof( CoreApplicationIdentity ).GetMethod( "Reset", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static );
+        if( m == null ) return false;
         m.Invoke( null, null );
+        return true;
     }
 
     [Test]
@@ -123,6 +123,8 @@ public class CoreApplicationIdentityTests
     [Test]
     public void OnInitialized_is_always_called_even_after_initialization()
     {
+        Assume.That( ResetStaticIdentity(), "This test can only run in DEBUG." );
+
         // This test shows that CancellationTokenSource reverts the call order.
         // Here we don't really care but this could be annoying in general
         // since this doesn't follow the standard event pattern...
@@ -157,6 +159,8 @@ public class CoreApplicationIdentityTests
     [Test]
     public void once_Initialized_Configure_fails()
     {
+        Assume.That( ResetStaticIdentity(), "This test can only run in DEBUG." );
+
         CoreApplicationIdentity.IsInitialized.ShouldBeFalse();
         CoreApplicationIdentity.TryConfigure( b => b.DomainName = "D" ).ShouldBeTrue();
         CoreApplicationIdentity.Configure( b => b.PartyName = "Pop", true );
@@ -164,33 +168,35 @@ public class CoreApplicationIdentityTests
         CoreApplicationIdentity.IsInitialized.ShouldBeTrue();
 
         CoreApplicationIdentity.TryConfigure( b => b.DomainName = "nop" ).ShouldBeFalse();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.PartyName = "Pop" ) ).ShouldThrow<InvalidOperationException>();
+        Should.Throw<InvalidOperationException>( () => CoreApplicationIdentity.Configure( b => b.PartyName = "Pop" ) );
     }
 
     [Test]
     public void max_lengths_are_checked_by_builder()
     {
+        Assume.That( ResetStaticIdentity(), "This test can only run in DEBUG." );
+
         CoreApplicationIdentity.IsInitialized.ShouldBeFalse();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.DomainName = null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.DomainName = "" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.DomainName = "." ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.DomainName = "/A" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.DomainName = new string( 'D', CoreApplicationIdentity.DomainNameMaxLength + 1 ) ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentNullException>( () => CoreApplicationIdentity.Configure( b => b.DomainName = null! ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.DomainName = "" ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.DomainName = "." ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.DomainName = "/A" ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.DomainName = new string( 'D', CoreApplicationIdentity.DomainNameMaxLength + 1 ) ) );
 
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "_" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "A_" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "." ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "A/B" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = new string( 'E', CoreApplicationIdentity.EnvironmentNameMaxLength + 1 ) ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentNullException>( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = null! ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "_" ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "A_" ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "" ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "." ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = "A/B" ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.EnvironmentName = new string( 'E', CoreApplicationIdentity.EnvironmentNameMaxLength + 1 ) ) );
 
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.PartyName = "" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.PartyName = "." ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.PartyName = "A/B" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.PartyName = new string( 'P', CoreApplicationIdentity.PartyNameMaxLength + 1 ) ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.PartyName = "" ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.PartyName = "." ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.PartyName = "A/B" ) );
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.PartyName = new string( 'P', CoreApplicationIdentity.PartyNameMaxLength + 1 ) ) );
 
-        Util.Invokable( () => CoreApplicationIdentity.Configure( b => b.ContextDescriptor = new string( 'C', CoreApplicationIdentity.ContextDescriptorMaxLength + 1 ) ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => CoreApplicationIdentity.Configure( b => b.ContextDescriptor = new string( 'C', CoreApplicationIdentity.ContextDescriptorMaxLength + 1 ) ) );
 
         CoreApplicationIdentity.IsInitialized.ShouldBeFalse();
     }

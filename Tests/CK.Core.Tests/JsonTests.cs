@@ -108,8 +108,8 @@ public class JsonTests
         d2.Events.Count.ShouldBe( 3 );
         d2.Events.ShouldBeEquivalentTo( d.Events );
 
-        Util.Invokable( () => JsonIdempotenceCheck( d, Write, ReadSuperData, new SuperDataReaderContext( null, limit ) ) )
-            .ShouldThrow<CKException>().Message.ShouldStartWith( "Json idempotence failure between" );
+        Should.Throw<CKException>( () => JsonIdempotenceCheck( d, Write, ReadSuperData, new SuperDataReaderContext( null, limit ) ) )
+            .Message.ShouldStartWith( "Json idempotence failure between" );
     }
 
     // Simple event.

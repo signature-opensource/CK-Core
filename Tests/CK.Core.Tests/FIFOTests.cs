@@ -73,7 +73,7 @@ public class FIFOTests
         f.Contains( value ).ShouldBeTrue();
         f.Contains( otherValue ).ShouldBeFalse();
         f.Contains( null! ).ShouldBeFalse();
-        f.SequenceEqual( new[] { value } ).ShouldBeTrue();
+        f.SequenceEqual( [value] ).ShouldBeTrue();
     }
 
     #endregion
@@ -91,32 +91,31 @@ public class FIFOTests
                 var array = (int[])initialArray.Clone();
                 b.Push( 1 );
                 b.CopyTo( array.AsSpan( 3, 2 ) );
-                array.SequenceEqual( new int[] { -1, 0, 0, 1, 0, 0, -1 } ).ShouldBeTrue();
+                array.SequenceEqual( [-1, 0, 0, 1, 0, 0, -1] ).ShouldBeTrue();
                 array[3] = 0;
                 b.Push( 2 );
                 b.CopyTo( array.AsSpan( 3, 2 ) );
-                array.SequenceEqual( new int[] { -1, 0, 0, 1, 2, 0, -1 } ).ShouldBeTrue();
+                array.SequenceEqual( [-1, 0, 0, 1, 2, 0, -1] ).ShouldBeTrue();
 
                 array[3] = 0; array[4] = 0;
                 b.Push( 3 );
                 b.CopyTo( array.AsSpan( 3, 3 ) );
-                array.SequenceEqual( new int[] { -1, 0, 0, 1, 2, 3, -1 } ).ShouldBeTrue();
+                array.SequenceEqual( [-1, 0, 0, 1, 2, 3, -1] ).ShouldBeTrue();
 
                 array[3] = 0; array[4] = 0; array[5] = 0;
                 b.Push( 4 );
                 b.CopyTo( array.AsSpan( 3, 3 ) );
-                array.SequenceEqual( new int[] { -1, 0, 0, 2, 3, 4, -1 } ).ShouldBeTrue();
+                array.SequenceEqual( [-1, 0, 0, 2, 3, 4, -1] ).ShouldBeTrue();
 
                 array[3] = 0; array[4] = 0; array[5] = 0;
                 b.CopyTo( array.AsSpan( 2, 4 ) );
-                array.SequenceEqual( new int[] { -1, 0, 1, 2, 3, 4, -1 } ).ShouldBeTrue();
+                array.SequenceEqual( [-1, 0, 1, 2, 3, 4, -1] ).ShouldBeTrue();
 
                 array[3] = 0; array[4] = 0; array[5] = 0;
                 b.CopyTo( array.AsSpan( 2, 5 ) ).ShouldBe( 4 );
-                array.SequenceEqual( new int[] { -1, 0, 1, 2, 3, 4, -1 } ).ShouldBeTrue( "Sentinel is not changed: there is only 4 items to copy." );
+                array.SequenceEqual( [-1, 0, 1, 2, 3, 4, -1] ).ShouldBeTrue( "Sentinel is not changed: there is only 4 items to copy." );
 
-                Util.Invokable( () => b.CopyTo( array.AsSpan( 2, 6 ) ) ).ShouldThrow<ArgumentOutOfRangeException>(
-                    "Even if the items fit, there must be an exception." );
+                Should.Throw<ArgumentOutOfRangeException>( () => b.CopyTo( array.AsSpan( 2, 6 ) ), "Even if the items fit, there must be an exception." );
 
                 b.Truncate( 1 );
                 b.Peek().ShouldBe( 4 );
@@ -133,14 +132,14 @@ public class FIFOTests
 
                 array[3] = 0; array[4] = 0; array[5] = 0;
                 b.CopyTo( array.AsSpan( 1 ) ).ShouldBe( 5 );
-                array.SequenceEqual( new int[] { -1, 7, 8, 9, 10, 11, -1 } ).ShouldBeTrue( "Sentinel is not changed: there is only 5 items to copy." );
+                array.SequenceEqual( [-1, 7, 8, 9, 10, 11, -1] ).ShouldBeTrue( "Sentinel is not changed: there is only 5 items to copy." );
 
                 array[5] = 0;
                 b.CopyTo( array.AsSpan() ).ShouldBe( 5 );
-                array.SequenceEqual( new int[] { 7, 8, 9, 10, 11, 0, -1 } ).ShouldBeTrue();
+                array.SequenceEqual( [7, 8, 9, 10, 11, 0, -1] ).ShouldBeTrue();
 
                 b.CopyTo( array.AsSpan( 5 ) ).ShouldBe( 2 );
-                array.SequenceEqual( new int[] { 7, 8, 9, 10, 11, 10, 11 } ).ShouldBeTrue();
+                array.SequenceEqual( [7, 8, 9, 10, 11, 10, 11] ).ShouldBeTrue();
             } );
     }
 
@@ -222,16 +221,16 @@ public class FIFOTests
         f.ToString().ShouldBe( String.Format( "Count = {0} (Capacity = {1})", 0, 2 ) );
 
         //ExceptionTest
-        Util.Invokable( () => f.Capacity = -1 ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => new FIFOBuffer<int>( -1 ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => f.Capacity = -1 );
+        Should.Throw<ArgumentException>( () => new FIFOBuffer<int>( -1 ) );
     }
 
     [Test]
     public void FIFO_supports_removeAt()
     {
         FIFOBuffer<int> f = new FIFOBuffer<int>( 0 );
-        Util.Invokable( () => f.RemoveAt( 0 ) ).ShouldThrow<ArgumentOutOfRangeException>();
-        Util.Invokable( () => f.RemoveAt( -1 ) ).ShouldThrow<ArgumentOutOfRangeException>();
+        Should.Throw<ArgumentOutOfRangeException>( () => f.RemoveAt( 0 ) );
+        Should.Throw<ArgumentOutOfRangeException>( () => f.RemoveAt( -1 ) );
 
         f.Capacity = 1;
         f.Push( 1 );
@@ -312,43 +311,43 @@ public class FIFOTests
     public void FIFO_supports_Peek_and_PeekLast()
     {
         FIFOBuffer<int> f = new FIFOBuffer<int>( 0 );
-        Util.Invokable( () => Console.Write( f[-1] ) ).ShouldThrow<ArgumentOutOfRangeException>();
-        Util.Invokable( () => Console.Write( f[0] ) ).ShouldThrow<ArgumentOutOfRangeException>();
-        Util.Invokable( f.Peek ).ShouldThrow<InvalidOperationException>();
-        Util.Invokable( f.PeekLast ).ShouldThrow<InvalidOperationException>();
+        Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( f[-1] ) );
+        Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( f[0] ) );
+        Should.Throw<InvalidOperationException>( () => f.Peek() );
+        Should.Throw<InvalidOperationException>( () => f.PeekLast() );
 
         f.Push( 5 );
-        Util.Invokable( () => Console.Write( f[0] ) ).ShouldThrow<ArgumentOutOfRangeException>();
-        Util.Invokable( f.Peek ).ShouldThrow<InvalidOperationException>();
-        Util.Invokable( f.PeekLast ).ShouldThrow<InvalidOperationException>();
+        Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( f[0] ) );
+        Should.Throw<InvalidOperationException>( () => f.Peek() );
+        Should.Throw<InvalidOperationException>( () => f.PeekLast() );
 
         f.Capacity = 1;
         TestWithInternalOffsets( f, b =>
         {
             b.Push( 5 );
             b[0].ShouldBe( 5 );
-            Util.Invokable( () => Console.Write( b[1] ) ).ShouldThrow<ArgumentOutOfRangeException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( b[1] ) );
             b.Peek().ShouldBe( 5 );
             b.PeekLast().ShouldBe( 5 );
             b.Push( 6 );
             b[0].ShouldBe( 6, "Only one item in it." );
-            Util.Invokable( () => Console.Write( b[1] ) ).ShouldThrow<ArgumentOutOfRangeException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( b[1] ) );
             b.Peek().ShouldBe( 6 );
             b.PeekLast().ShouldBe( 6 );
         } );
 
         f.Clear();
-        Util.Invokable( () => Console.Write( f[0] ) ).ShouldThrow<ArgumentOutOfRangeException>();
-        Util.Invokable( () => Console.Write( f[1] ) ).ShouldThrow<ArgumentOutOfRangeException>();
-        Util.Invokable( f.Peek ).ShouldThrow<InvalidOperationException>();
-        Util.Invokable( f.PeekLast ).ShouldThrow<InvalidOperationException>();
+        Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( f[0] ) );
+        Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( f[1] ) );
+        Should.Throw<InvalidOperationException>( () => f.Peek() );
+        Should.Throw<InvalidOperationException>( () => f.PeekLast() );
 
         f.Capacity = 2;
         TestWithInternalOffsets( f, b =>
         {
             b.Push( 5 );
             b[0].ShouldBe( 5 );
-            Util.Invokable( () => Console.Write( b[1] ) ).ShouldThrow<ArgumentOutOfRangeException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( b[1] ) );
             b.Peek().ShouldBe( 5 );
             b.PeekLast().ShouldBe( 5 );
             b.Push( 6 );
@@ -358,21 +357,21 @@ public class FIFOTests
             b.PeekLast().ShouldBe( 6 );
             b.Pop();
             b[0].ShouldBe( 6 );
-            Util.Invokable( () => Console.Write( b[1] ) ).ShouldThrow<ArgumentOutOfRangeException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( b[1] ) );
             b.Peek().ShouldBe( 6 );
             b.PeekLast().ShouldBe( 6 );
             b.Pop();
-            Util.Invokable( () => Console.Write( b[0] ) ).ShouldThrow<ArgumentOutOfRangeException>();
-            Util.Invokable( () => Console.Write( b[1] ) ).ShouldThrow<ArgumentOutOfRangeException>();
-            Util.Invokable( b.Peek ).ShouldThrow<InvalidOperationException>();
-            Util.Invokable( b.PeekLast ).ShouldThrow<InvalidOperationException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( b[0] ) );
+            Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( b[1] ) );
+            Should.Throw<InvalidOperationException>( () => b.Peek() );
+            Should.Throw<InvalidOperationException>(() => b.PeekLast());
 
             b.Push( 7 );
             b.Push( 8 );
             b.Push( 9 );
             b[0].ShouldBe( 8 );
             b[1].ShouldBe( 9 );
-            b.ToArray().SequenceEqual( new int[] { 8, 9 } ).ShouldBeTrue();
+            b.ToArray().SequenceEqual( [8, 9] ).ShouldBeTrue();
             b.Peek().ShouldBe( 8 );
             b.PeekLast().ShouldBe( 9 );
             b.Pop().ShouldBe( 8 );
@@ -441,7 +440,7 @@ public class FIFOTests
             b[2].ShouldBe( 15 );
             b[3].ShouldBe( 16 );
             b[4].ShouldBe( 17 );
-            Util.Invokable( () => Console.Write( f[5] ) ).ShouldThrow<ArgumentOutOfRangeException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => Console.Write( f[5] ) );
         } );
     }
     [Test]

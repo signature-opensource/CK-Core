@@ -51,21 +51,21 @@ public class CKTraitTests
         var t1 = c1.FindOrCreate( "T1" );
         var t2 = c2.FindOrCreate( "T2" );
         t1.ShouldNotBeSameAs( t2 );
-        Util.Invokable( () => t1.Union( t2 ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => t1.Intersect( t2 ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => t1.Except( t2 ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => t1.SymmetricExcept( t2 ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => t1.Union( t2 ) );
+        Should.Throw<ArgumentException>( () => t1.Intersect( t2 ) );
+        Should.Throw<ArgumentException>( () => t1.Except( t2 ) );
+        Should.Throw<ArgumentException>( () => t1.SymmetricExcept( t2 ) );
 
-        Util.Invokable( () => t1.Overlaps( t2 ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => t1.IsSupersetOf( t2 ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => t1.Overlaps( t2 ) );
+        Should.Throw<ArgumentException>( () => t1.IsSupersetOf( t2 ) );
 
-        Util.Invokable( () => t1.Union( null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => t1.Intersect( null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => t1.Except( null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => t1.SymmetricExcept( null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => t1.Union( null! ) );
+        Should.Throw<ArgumentNullException>( () => t1.Intersect( null! ) );
+        Should.Throw<ArgumentNullException>( () => t1.Except( null! ) );
+        Should.Throw<ArgumentNullException>( () => t1.SymmetricExcept( null! ) );
 
-        Util.Invokable( () => t1.Overlaps( null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => t1.IsSupersetOf( null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => t1.Overlaps( null! ) );
+        Should.Throw<ArgumentNullException>( () => t1.IsSupersetOf( null! ) );
     }
 
     [Test]
@@ -80,8 +80,8 @@ public class CKTraitTests
         c.FindOrCreate( null! ).ShouldBeSameAs( m, "Null gives the empty tag." );
         c.FindOrCreate( "" ).ShouldBeSameAs( m, "Obtaining empty string gives the empty tag." );
         c.FindOrCreate( "+" ).ShouldBeSameAs( m, "Obtaining '+' gives the empty tag." );
-        Util.Invokable( () => c.FindOrCreate( " \t \n  " ) ).ShouldThrow<ArgumentException>( "No \n inside." );
-        Util.Invokable( () => c.FindOrCreate( " \r " ) ).ShouldThrow<ArgumentException>( "No \r inside." );
+        Should.Throw<ArgumentException>( () => c.FindOrCreate( " \t \n  " ), "No \n inside." );
+        Should.Throw<ArgumentException>( () => c.FindOrCreate( " \r " ), "No \r inside." );
         c.FindOrCreate( "+ \t +" ).ShouldBeSameAs( m, "Leading and trailing '+' are ignored." );
         c.FindOrCreate( "++++" ).ShouldBeSameAs( m, "Multiple + are ignored" );
         c.FindOrCreate( "++  +++  + \t +" ).ShouldBeSameAs( m, "Multiple empty strings leads to empty tag." );

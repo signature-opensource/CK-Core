@@ -81,8 +81,7 @@ public class NormalizedPathTests
     {
         if( result == "ArgumentException" )
         {
-            Util.Invokable( () => new NormalizedPath( p ).With( newKind ) )
-                    .ShouldThrow<ArgumentException>();
+            Should.Throw<ArgumentException>( () => new NormalizedPath( p ).With( newKind ) );
 
         }
         else
@@ -343,14 +342,12 @@ public class NormalizedPathTests
     {
         if( result == "ArgumentNullException" )
         {
-            Util.Invokable( () => new NormalizedPath( root ).AppendPart( suffix ) )
-                    .ShouldThrow<ArgumentNullException>();
+            Should.Throw<ArgumentNullException>( () => new NormalizedPath( root ).AppendPart( suffix ) );
 
         }
         else if( result == "ArgumentException" )
         {
-            Util.Invokable( () => new NormalizedPath( root ).AppendPart( suffix ) )
-                    .ShouldThrow<ArgumentException>();
+            Should.Throw<ArgumentException>( () => new NormalizedPath( root ).AppendPart( suffix ) );
 
         }
         else
@@ -416,8 +413,7 @@ public class NormalizedPathTests
     {
         if( result == "InvalidOperationException" )
         {
-            Util.Invokable( () => new NormalizedPath( path ).ResolveDots() )
-                    .ShouldThrow<InvalidOperationException>();
+            Should.Throw<InvalidOperationException>( () => new NormalizedPath( path ).ResolveDots() );
         }
         else
         {
@@ -451,13 +447,11 @@ public class NormalizedPathTests
     {
         if( result == "ArgumentOutOfRangeException" )
         {
-            Util.Invokable( () => new NormalizedPath( path ).ResolveDots( rootPartsCount: rootPartsCount ) )
-                    .ShouldThrow<ArgumentOutOfRangeException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => new NormalizedPath( path ).ResolveDots( rootPartsCount: rootPartsCount ) );
         }
         else if( result == "InvalidOperationException" )
         {
-            Util.Invokable( () => new NormalizedPath( path ).ResolveDots( rootPartsCount: rootPartsCount ) )
-                    .ShouldThrow<InvalidOperationException>();
+            Should.Throw<InvalidOperationException>( () => new NormalizedPath( path ).ResolveDots( rootPartsCount: rootPartsCount ) );
         }
         else
         {
@@ -480,8 +474,7 @@ public class NormalizedPathTests
     {
         if( result == "ArgumentOutOfRangeException" )
         {
-            Util.Invokable( () => new NormalizedPath( path ).RemovePart( index ) )
-                    .ShouldThrow<ArgumentOutOfRangeException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => new NormalizedPath( path ).RemovePart( index ) );
         }
         else
         {
@@ -545,8 +538,7 @@ public class NormalizedPathTests
     {
         if( result == "ArgumentOutOfRangeException" )
         {
-            Util.Invokable( () => new NormalizedPath( path ).RemoveParts( startIndex, count ) )
-                    .ShouldThrow<ArgumentOutOfRangeException>();
+            Should.Throw<ArgumentOutOfRangeException>( () => new NormalizedPath( path ).RemoveParts( startIndex, count ) );
         }
         else
         {
@@ -578,8 +570,7 @@ public class NormalizedPathTests
     {
         if( result == "ArgumentException" )
         {
-            Util.Invokable( () => new NormalizedPath( path ).RemoveLastPart( count ) )
-                    .ShouldThrow<ArgumentException>();
+            Should.Throw<ArgumentException>( () => new NormalizedPath( path ).RemoveLastPart( count ) );
         }
         else
         {
@@ -610,8 +601,7 @@ public class NormalizedPathTests
     {
         if( result == "ArgumentException" )
         {
-            Util.Invokable( () => new NormalizedPath( path ).RemoveFirstPart( count ) )
-                    .ShouldThrow<ArgumentException>();
+            Should.Throw<ArgumentException>( () => new NormalizedPath( path ).RemoveFirstPart( count ) );
         }
         else
         {

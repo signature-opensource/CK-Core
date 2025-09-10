@@ -80,7 +80,7 @@ public class SortedArrayKeyListTests
 
         b.Contains( classToTest ).ShouldBeTrue();
         b.IndexOf( classToTest ).ShouldBe( 0 );
-        Util.Invokable( () => b.IndexOf( (ClassToTest)null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => b.IndexOf( (ClassToTest)null! ) );
     }
 
     [Test]

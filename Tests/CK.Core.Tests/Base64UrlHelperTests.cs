@@ -32,7 +32,7 @@ public class Base64UrlHelperTests
     [TestCase( "YQ==" )]
     public void invalid_FromBase64UrlString_must_throw( string s )
     {
-        Util.Invokable( () => Base64UrlHelper.FromBase64UrlString( s ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => Base64UrlHelper.FromBase64UrlString( s ) );
     }
 
     [TestCase( "QQ", true )]

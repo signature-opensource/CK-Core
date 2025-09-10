@@ -72,7 +72,7 @@ public class CheckedWriteStreamTests
         checker.ThrowArgumentException = true;
         checker.Write( content );
         checker.GetResult().ShouldBe( CheckedWriteStream.Result.None );
-        Util.Invokable( () => checker.WriteByte( 0 ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => checker.WriteByte( 0 ) );
     }
 
     [Test]
@@ -82,7 +82,7 @@ public class CheckedWriteStreamTests
         using var checker = CheckedWriteStream.Create( new ReadOnlySequence<byte>( content ) );
         checker.ThrowArgumentException = true;
         checker.Write( content, 0, content.Length - 1 );
-        Util.Invokable( () => checker.GetResult() ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => checker.GetResult() );
     }
 
     [TestCase( 5 )]
@@ -96,7 +96,7 @@ public class CheckedWriteStreamTests
         int idx = Random.Shared.Next( initialLength );
         var modified = content.ToArray();
         modified[idx] = (byte)(idx + 1);
-        Util.Invokable( () => checker.Write( modified ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => checker.Write( modified ) );
     }
 
 
