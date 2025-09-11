@@ -260,9 +260,9 @@ public class SortedArrayListTests
     {
         var a = new TestInt();
         a.CheckList();
-        Util.Invokable( () => a.RemoveAt( -1 ) ).ShouldThrow<IndexOutOfRangeException>();
-        Util.Invokable( () => a.RemoveAt( 0 ) ).ShouldThrow<IndexOutOfRangeException>();
-        Util.Invokable( () => a.RemoveAt( 1 ) ).ShouldThrow<IndexOutOfRangeException>();
+        Should.Throw<IndexOutOfRangeException>( () => a.RemoveAt( -1 ) );
+        Should.Throw<IndexOutOfRangeException>( () => a.RemoveAt( 0 ) );
+        Should.Throw<IndexOutOfRangeException>( () => a.RemoveAt( 1 ) );
 
         a.Remove( -1 ).ShouldBeFalse();
         a.Remove( 0 ).ShouldBeFalse();
@@ -270,8 +270,8 @@ public class SortedArrayListTests
 
         a.Add( 204 );
         a.CheckList();
-        Util.Invokable( () => a.RemoveAt( -1 ) ).ShouldThrow<IndexOutOfRangeException>();
-        Util.Invokable( () => a.RemoveAt( 1 ) ).ShouldThrow<IndexOutOfRangeException>();
+        Should.Throw<IndexOutOfRangeException>( () => a.RemoveAt( -1 ) );
+        Should.Throw<IndexOutOfRangeException>( () => a.RemoveAt( 1 ) );
 
         a.RemoveAt( 0 );
         a.Count.ShouldBe( 0 );
@@ -284,7 +284,7 @@ public class SortedArrayListTests
 
         a.RemoveAt( 1 );
         CheckList( a, 204, 206 );
-        Util.Invokable( () => a.RemoveAt( 2 ) ).ShouldThrow<IndexOutOfRangeException>();
+        Should.Throw<IndexOutOfRangeException>( () => a.RemoveAt( 2 ) );
         a.RemoveAt( 1 );
         CheckList( a, 204 );
         a.RemoveAt( 0 );
@@ -296,7 +296,7 @@ public class SortedArrayListTests
         a.Add( 207 );
         a.Add( 208 );
         CheckList( a, 204, 205, 206, 207, 208 );
-        Util.Invokable( () => a.RemoveAt( 5 ) ).ShouldThrow<IndexOutOfRangeException>();
+        Should.Throw<IndexOutOfRangeException>( () => a.RemoveAt( 5 ) );
         a.RemoveAt( 0 );
         CheckList( a, 205, 206, 207, 208 );
         a.RemoveAt( 3 );
@@ -344,7 +344,7 @@ public class SortedArrayListTests
 
         a.Add( new Mammal( "1" ) );
 
-        Util.Invokable( () => a.Capacity = 0 ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentException>( () => a.Capacity = 0 );
 
         a.Add( new Mammal( "2" ) );
         a.Add( new Mammal( "3" ) );
@@ -374,41 +374,41 @@ public class SortedArrayListTests
     {
         var a = new CKSortedArrayList<Mammal>( ( a1, a2 ) => a1.Name.CompareTo( a2.Name ) );
 
-        Util.Invokable( () => a.IndexOf( null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => a.IndexOf( null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => a.IndexOf<Mammal>( new Mammal( "Nothing" ), null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => a.Add( null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => a.IndexOf( null! ) );
+        Should.Throw<ArgumentNullException>( () => a.IndexOf( null! ) );
+        Should.Throw<ArgumentNullException>( () => a.IndexOf<Mammal>( new Mammal( "Nothing" ), null! ) );
+        Should.Throw<ArgumentNullException>( () => a.Add( null! ) );
 
         a.Add( new Mammal( "A" ) );
         a.Add( new Mammal( "B" ) );
 
-        Util.Invokable( () => { Mammal test = a[2]; } ).ShouldThrow<IndexOutOfRangeException>();
-        Util.Invokable( () => a.CheckPosition( 2 ) ).ShouldThrow<IndexOutOfRangeException>();
-        Util.Invokable( () => { Mammal test = a[-1]; } ).ShouldThrow<IndexOutOfRangeException>();
+        Should.Throw<IndexOutOfRangeException>( () => { Mammal test = a[2]; } );
+        Should.Throw<IndexOutOfRangeException>( () => a.CheckPosition( 2 ) );
+        Should.Throw<IndexOutOfRangeException>( () => { Mammal test = a[-1]; } );
 
         //Enumerator Exception (considering the non generic version since generics have weaken the invariants).
         var enumerator = ((System.Collections.IEnumerable)a).GetEnumerator();
-        Util.Invokable( () => { object? temp = enumerator.Current; } ).ShouldThrow<InvalidOperationException>();
+        Should.Throw<InvalidOperationException>( () => { object? temp = enumerator.Current; } );
         enumerator.MoveNext();
         enumerator.Current.ShouldBe( a[0] );
         enumerator.Reset();
-        Util.Invokable( () => { object? temp = enumerator.Current; } ).ShouldThrow<InvalidOperationException>();
+        Should.Throw<InvalidOperationException>( () => { object? temp = enumerator.Current; } );
         a.Clear(); //change _version
-        Util.Invokable( enumerator.Reset ).ShouldThrow<InvalidOperationException>();
-        Util.Invokable( enumerator.MoveNext ).ShouldThrow<InvalidOperationException>();
+        Should.Throw<InvalidOperationException>( () => enumerator.Reset() );
+        Should.Throw<InvalidOperationException>( () => enumerator.MoveNext() );
 
         //Exception
         IList<Mammal> testException = new CKSortedArrayList<Mammal>
         {
             new Mammal( "Nothing" )
         };
-        Util.Invokable( () => testException[-1] = new Mammal( "A" ) ).ShouldThrow<IndexOutOfRangeException>();
-        Util.Invokable( () => testException[1] = new Mammal( "A" ) ).ShouldThrow<IndexOutOfRangeException>();
-        Util.Invokable( () => testException[0] = null! ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => testException.Insert( -1, new Mammal( "A" ) ) ).ShouldThrow<IndexOutOfRangeException>();
-        Util.Invokable( () => testException.Insert( 2, new Mammal( "A" ) ) ).ShouldThrow<IndexOutOfRangeException>();
+        Should.Throw<IndexOutOfRangeException>( () => testException[-1] = new Mammal( "A" ) );
+        Should.Throw<IndexOutOfRangeException>( () => testException[1] = new Mammal( "A" ) );
+        Should.Throw<ArgumentNullException>( () => testException[0] = null! );
+        Should.Throw<IndexOutOfRangeException>( () => testException.Insert( -1, new Mammal( "A" ) ) );
+        Should.Throw<IndexOutOfRangeException>( () => testException.Insert( 2, new Mammal( "A" ) ) );
 
-        Util.Invokable( () => testException.Insert( 0, null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => testException.Insert( 0, null! ) );
     }
 
     [Test]

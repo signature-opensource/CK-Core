@@ -144,7 +144,7 @@ public class ServiceContainerTests
 
         container.GetService( typeof( IAddService ) ).ShouldBeNull();
         container.GetService<IAddService>( false ).ShouldBeNull();
-        Util.Invokable( () => container.GetService<IAddService>( true ) ).ShouldThrow<Exception>();
+        Should.Throw<Exception>( () => container.GetService<IAddService>( true ) );
     }
 
     [Test]
@@ -163,7 +163,7 @@ public class ServiceContainerTests
 
         container.GetService( typeof( DisposableThatReenterClearWhenDisposed ) ).ShouldBeNull();
         container.GetService<DisposableThatReenterClearWhenDisposed>( false ).ShouldBeNull();
-        Util.Invokable( () => container.GetService<DisposableThatReenterClearWhenDisposed>( true ) ).ShouldThrow<Exception>();
+        Should.Throw<Exception>( () => container.GetService<DisposableThatReenterClearWhenDisposed>( true ) );
     }
 
     [Test]
@@ -185,7 +185,7 @@ public class ServiceContainerTests
 
         container.GetService( typeof( DisposableThatReenterClearWhenDisposed ) ).ShouldBeNull();
         container.GetService<DisposableThatReenterClearWhenDisposed>( false ).ShouldBeNull();
-        Util.Invokable( () => container.GetService<DisposableThatReenterClearWhenDisposed>( true ) ).ShouldThrow<Exception>();
+        Should.Throw<Exception>( () => container.GetService<DisposableThatReenterClearWhenDisposed>( true ) );
     }
 
     [Test]
@@ -195,15 +195,14 @@ public class ServiceContainerTests
         container.GetService<IServiceProvider>( false ).ShouldBeSameAs( container );
         container.GetService<ISimpleServiceContainer>( false ).ShouldBeSameAs( container );
 
-        Util.Invokable( () => container.Add<ISimpleServiceContainer>( container ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add<ISimpleServiceContainer>( new SimpleServiceContainer() ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add<ISimpleServiceContainer>( JustAFunc<ISimpleServiceContainer> ) ).ShouldThrow<Exception>();
+        Should.Throw<Exception>( () => container.Add<ISimpleServiceContainer>( container ) );
+        Should.Throw<Exception>( () => container.Add<ISimpleServiceContainer>( new SimpleServiceContainer() ) );
+        Should.Throw<Exception>( () => container.Add<ISimpleServiceContainer>( JustAFunc<ISimpleServiceContainer> ) );
 
-        Util.Invokable( () => container.Add<IServiceProvider>( container ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add<IServiceProvider>( new SimpleServiceContainer() ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add<IServiceProvider>( JustAFunc<IServiceProvider> ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.AddDisabled( typeof( IServiceProvider ) ) ).ShouldThrow<Exception>();
-
+        Should.Throw<Exception>( () => container.Add<IServiceProvider>( container ) );
+        Should.Throw<Exception>( () => container.Add<IServiceProvider>( new SimpleServiceContainer() ) );
+        Should.Throw<Exception>( () => container.Add<IServiceProvider>( JustAFunc<IServiceProvider> ) );
+        Should.Throw<Exception>( () => container.AddDisabled( typeof( IServiceProvider ) ) );
     }
 
     [Test]
@@ -211,10 +210,10 @@ public class ServiceContainerTests
     {
         SimpleServiceContainer container = new SimpleServiceContainer();
 
-        Util.Invokable( () => container.Add( typeof( int ), new ProvidedClass( 5 ), null ) ).ShouldThrow<Exception>();
+        Should.Throw<Exception>( () => container.Add( typeof( int ), new ProvidedClass( 5 ), null ) );
 
         container.Add( typeof( ProvidedClass ), () => { return new EmptyClass(); }, null );
-        Util.Invokable( () => container.GetService<ProvidedClass>( false ) ).ShouldThrow<Exception>();
+        Should.Throw<Exception>( () => container.GetService<ProvidedClass>( false ) );
     }
 
     [ExcludeFromCodeCoverage]
@@ -229,16 +228,16 @@ public class ServiceContainerTests
         ISimpleServiceContainer container = new SimpleServiceContainer();
 
         //SimpleServiceContainer.Add( Type serviceType, object serviceInstance, Action<Object> onRemove = null )
-        Util.Invokable( () => container.Add( null!, new ProvidedClass( 5 ) ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => container.Add( typeof( ProvidedClass ), (object)null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => container.Add( null!, new ProvidedClass( 5 ) ) );
+        Should.Throw<ArgumentNullException>( () => container.Add( typeof( ProvidedClass ), (object)null! ) );
 
         //SimpleServiceContainer.Add( Type serviceType, Func<Object> serviceInstance, Action<Object> onRemove = null )
-        Util.Invokable( () => container.Add( null!, JustAFunc ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => container.Add( typeof( ProvidedClass ), (Func<Object>)null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => container.Add( null!, JustAFunc ) );
+        Should.Throw<ArgumentNullException>( () => container.Add( typeof( ProvidedClass ), (Func<Object>)null! ) );
 
-        Util.Invokable( () => container.AddDisabled( null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => container.GetService( null! ) ).ShouldThrow<ArgumentNullException>();
-        Util.Invokable( () => container.Add<ProvidedClass>( JustAFunc<ProvidedClass>, null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => container.AddDisabled( null! ) );
+        Should.Throw<ArgumentNullException>( () => container.GetService( null! ) );
+        Should.Throw<ArgumentNullException>( () => container.Add<ProvidedClass>( JustAFunc<ProvidedClass>, null! ) );
     }
 
     [Test]
@@ -248,21 +247,21 @@ public class ServiceContainerTests
         SimpleServiceContainer secondContainer = new SimpleServiceContainer();
         SimpleServiceContainer thirdContainer = new SimpleServiceContainer();
 
-        Util.Invokable( () => firstContainer.BaseProvider = firstContainer ).ShouldThrow<Exception>();
+        Should.Throw<Exception>(() => firstContainer.BaseProvider = firstContainer);
 
         //firstContainer( secondContainer )
         firstContainer.BaseProvider = secondContainer;
-        Util.Invokable( () => secondContainer.BaseProvider = firstContainer ).ShouldThrow<Exception>();
+        Should.Throw<Exception>(() => secondContainer.BaseProvider = firstContainer);
 
         //firstContainer( secondContainer( thirdContainer ) )
         secondContainer.BaseProvider = thirdContainer;
-        Util.Invokable( () => thirdContainer.BaseProvider = firstContainer ).ShouldThrow<Exception>();
-        Util.Invokable( () => thirdContainer.BaseProvider = secondContainer ).ShouldThrow<Exception>();
+        Should.Throw<Exception>(() => thirdContainer.BaseProvider = firstContainer);
+        Should.Throw<Exception>(() => thirdContainer.BaseProvider = secondContainer);
 
         //firstContainer( thirdContainer ) and secondContainer( thirdContainer ) 
         firstContainer.BaseProvider = thirdContainer;
-        Util.Invokable( () => thirdContainer.BaseProvider = secondContainer ).ShouldThrow<Exception>();
-        Util.Invokable( () => thirdContainer.BaseProvider = firstContainer ).ShouldThrow<Exception>();
+        Should.Throw<Exception>(() => thirdContainer.BaseProvider = secondContainer);
+        Should.Throw<Exception>(() => thirdContainer.BaseProvider = firstContainer);
 
     }
 
@@ -351,13 +350,13 @@ public class ServiceContainerTests
     private static void IServiceContainerConformanceAddFailsWhenExisting( ISimpleServiceContainer container, Func<IAddService> creatorFunc )
     {
         container.Add<IAddService>( new AddServiceImpl() );
-        Util.Invokable( () => container.Add( creatorFunc ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add<IAddService>( creatorFunc, s => { } ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add( typeof( IAddService ), new AddServiceImpl() ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add( typeof( IAddService ), new AddServiceImpl(), s => { } ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add<IAddService>( new AddServiceImpl() ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.Add<IAddService>( new AddServiceImpl(), s => { } ) ).ShouldThrow<Exception>();
-        Util.Invokable( () => container.AddDisabled( typeof( IAddService ) ) ).ShouldThrow<Exception>();
+        Should.Throw<Exception>( () => container.Add( creatorFunc ) );
+        Should.Throw<Exception>( () => container.Add<IAddService>( creatorFunc, s => { } ) );
+        Should.Throw<Exception>( () => container.Add( typeof( IAddService ), new AddServiceImpl() ) );
+        Should.Throw<Exception>( () => container.Add( typeof( IAddService ), new AddServiceImpl(), s => { } ) );
+        Should.Throw<Exception>( () => container.Add<IAddService>( new AddServiceImpl() ) );
+        Should.Throw<Exception>( () => container.Add<IAddService>( new AddServiceImpl(), s => { } ) );
+        Should.Throw<Exception>( () => container.AddDisabled( typeof( IAddService ) ) );
         container.Remove( typeof( IAddService ) );
     }
 
@@ -366,7 +365,7 @@ public class ServiceContainerTests
         container.GetService<IAddService>( false ).ShouldBeNull( "Starting with no IAddService." );
 
         container.Add( creatorFunc );
-        Util.Invokable( () => container.Add( creatorFunc ) ).ShouldThrow<Exception>( "Adding an already existing service throws an exception." );
+        Should.Throw<Exception>( () => container.Add( creatorFunc ), "Adding an already existing service throws an exception." );
 
         container.GetService<IAddService>( false ).ShouldNotBeNull( "Deferred creation occured." );
         container.Remove( typeof( IAddService ) );

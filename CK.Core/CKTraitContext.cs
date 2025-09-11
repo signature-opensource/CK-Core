@@ -209,7 +209,7 @@ public sealed class CKTraitContext : IComparable<CKTraitContext>
     /// </summary>
     /// <param name="tags">Atomic tag or tags separated by <see cref="Separator"/>.</param>
     /// <returns>A tag.</returns>
-    public CKTrait FindOrCreate( string tags ) => FindOrCreate( tags, true )!;
+    public CKTrait FindOrCreate( string? tags ) => FindOrCreate( tags, true ) ?? EmptyTrait;
 
     /// <summary>
     /// Finds a <see cref="CKTrait"/> (either combined or atomic) only if all 
@@ -218,7 +218,7 @@ public sealed class CKTraitContext : IComparable<CKTraitContext>
     /// </summary>
     /// <param name="tags">Atomic tag or tags separated by <see cref="Separator"/>.</param>
     /// <returns>A tag or null if the tag does not exists.</returns>
-    public CKTrait? FindIfAllExist( string tags ) => FindOrCreate( tags, false );
+    public CKTrait? FindIfAllExist( string? tags ) => FindOrCreate( tags, false );
 
     /// <summary>
     /// Finds a <see cref="CKTrait"/> with only already existing atomic tags (null when not found).
@@ -226,7 +226,7 @@ public sealed class CKTraitContext : IComparable<CKTraitContext>
     /// <param name="tags">Atomic tag or tags separated by <see cref="Separator"/>.</param>
     /// <param name="collector">Optional collector for unknown tag. As soon as the collector returns false, the process stops.</param>
     /// <returns>A tag that contains only already existing tag or null if none already exists.</returns>
-    public CKTrait? FindOnlyExisting( string tags, Func<string, bool>? collector = null )
+    public CKTrait? FindOnlyExisting( string? tags, Func<string, bool>? collector = null )
     {
         if( tags == null || tags.Length == 0 ) return null;
         tags = tags.Normalize( NormalizationForm.FormC );
@@ -307,7 +307,7 @@ public sealed class CKTraitContext : IComparable<CKTraitContext>
     /// </summary>
     internal IEnumerable<CKTrait> EnumWithEmpty { get; }
 
-    CKTrait? FindOrCreate( string tags, bool create )
+    CKTrait? FindOrCreate( string? tags, bool create )
     {
         if( tags == null || tags.Length == 0 ) return EmptyTrait;
         tags = tags.Normalize();

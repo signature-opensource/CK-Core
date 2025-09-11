@@ -20,8 +20,7 @@ public static class DateTimeStampExtension
             byte uniquifier = 0;
             if( m.Head.TryMatch( '(' ) )
             {
-                if( !m.TryMatchInt32( out int u, 0, 255 ) || !m.TryMatch( ')' ) ) goto error;
-                uniquifier = (byte)u;
+                if( !m.TryMatchInteger( out uniquifier ) || !m.TryMatch( ')' ) ) goto error;
             }
             time = new DateTimeStamp( t, uniquifier );
             return m.SetSuccess();

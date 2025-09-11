@@ -13,7 +13,7 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullArgument_throws_ArgumentNullException_or_ArgumentException_for_reference_type()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentNullException>().ParamName.ShouldBe( "nullRefType" );
+        Should.Throw<ArgumentNullException>( () => f( null! ) ).ParamName.ShouldBe( "nullRefType" );
 
         static void f( object nullRefType )
         {
@@ -24,7 +24,7 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullArgument_throws_ArgumentNullException_or_ArgumentException_for_nullable_value_type()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentNullException>().ParamName.ShouldBe( "nullValueType" );
+        Should.Throw<ArgumentNullException>( () => f( null! ) ).ParamName.ShouldBe( "nullValueType" );
 
         static void f( int? nullValueType )
         {
@@ -35,9 +35,9 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullOrEmptyArgument_throws_ArgumentNullException_or_ArgumentException_for_strings()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentNullException>().ParamName.ShouldBe(  "anInvalidString" );
+        Should.Throw<ArgumentNullException>( () => f( null! ) ).ParamName.ShouldBe( "anInvalidString" );
 
-        var ex = Util.Invokable( () => f( "" ) ).ShouldThrow<ArgumentException>();
+        var ex = Should.Throw<ArgumentException>( () => f( "" ) );
         ex.Message.ShouldBe( "Must not be null or empty. (Parameter 'anInvalidString')" );
         ex.ParamName.ShouldBe( "anInvalidString" );
 
@@ -50,8 +50,8 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullOrEmptyArgument_throws_ArgumentNullException_or_ArgumentException_for_enumerable()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentNullException>().ParamName.ShouldBe(  "anEmptyEnumerable" );
-        var ex = Util.Invokable( () => f( "" ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentNullException>( () => f( null! ) ).ParamName.ShouldBe( "anEmptyEnumerable" );
+        var ex = Should.Throw<ArgumentException>( () => f( "" ) );
         ex.Message.ShouldBe( "Must not be null or empty. (Parameter 'anEmptyEnumerable')" );
         ex.ParamName.ShouldBe( "anEmptyEnumerable" );
 
@@ -64,8 +64,8 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullOrEmptyArgument_throws_ArgumentNullException_or_ArgumentException_for_readonly_collections()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentNullException>().ParamName.ShouldBe(  "anEmptyCollection" );
-        var ex = Util.Invokable( () => f( Array.Empty<int>() ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentNullException>( () => f( null! ) ).ParamName.ShouldBe( "anEmptyCollection" );
+        var ex = Should.Throw<ArgumentException>( () => f( Array.Empty<int>() ) );
         ex.Message.ShouldBe( "Must not be null or empty. (Parameter 'anEmptyCollection')" );
         ex.ParamName.ShouldBe( "anEmptyCollection" );
 
@@ -78,8 +78,8 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullOrEmptyArgument_throws_ArgumentNullException_or_ArgumentException_for_legacy_IEnumerable()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentNullException>().ParamName.ShouldBe(  "anEmptyLegacyEnumerable" );
-        var ex = Util.Invokable( () => f( Array.Empty<int>() ) ).ShouldThrow<ArgumentException>();
+        Should.Throw<ArgumentNullException>( () => f( null! ) ).ParamName.ShouldBe( "anEmptyLegacyEnumerable" );
+        var ex = Should.Throw<ArgumentException>( () => f( Array.Empty<int>() ) );
         ex.Message.ShouldBe( "Must not be null or empty. (Parameter 'anEmptyLegacyEnumerable')" );
         ex.ParamName.ShouldBe( "anEmptyLegacyEnumerable" );
 
@@ -92,10 +92,10 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullOrWhiteSpaceArgument_throws_ArgumentNullException_or_ArgumentException_for_string()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentNullException>().ParamName.ShouldBe( "anInvalidString" );
+        Should.Throw<ArgumentNullException>( () => f( null! ) ).ParamName.ShouldBe( "anInvalidString" );
 
-        Check( Util.Invokable( () => f( "" ) ).ShouldThrow<ArgumentException>() );
-        Check( Util.Invokable( () => f( "    " ) ).ShouldThrow<ArgumentException>() );
+        Check( Should.Throw<ArgumentException>( () => f( "" ) ) );
+        Check( Should.Throw<ArgumentException>( () => f( "    " ) ) );
 
         static void f( string anInvalidString )
         {
@@ -112,8 +112,8 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullOrEmptyArgument_throws_ArgumentException_for_Span()
     {
-        Check( Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentException>() );
-        Check( Util.Invokable( () => f( "".ToArray() ) ).ShouldThrow<ArgumentException>() );
+        Check( Should.Throw<ArgumentException>( () => f( null! ) ) );
+        Check( Should.Throw<ArgumentException>( () => f( "".ToArray() ) ) );
 
         static void f( Span<char> emptySpan )
         {
@@ -130,8 +130,8 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullOrEmptyArgument_throws_ArgumentException_for_ReadOnlySpan()
     {
-        Check( Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentException>() );
-        Check( Util.Invokable( () => f( "".ToArray() ) ).ShouldThrow<ArgumentException>() );
+        Check( Should.Throw<ArgumentException>( () => f( null! ) ) );
+        Check( Should.Throw<ArgumentException>( () => f( "".ToArray() ) ) );
 
         static void f( ReadOnlySpan<char> emptyROSpan )
         {
@@ -148,8 +148,8 @@ public partial class ThrowTests
     [Test]
     public void CheckNotNullOrEmptyArgument_throws_ArgumentException_for_Memory()
     {
-        Check( Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentException>() );
-        Check( Util.Invokable( () => f( Array.Empty<char>() ) ).ShouldThrow<ArgumentException>() );
+        Check( Should.Throw<ArgumentException>( () => f( null! ) ) );
+        Check( Should.Throw<ArgumentException>( () => f( Array.Empty<char>() ) ) );
 
         static void f( Memory<char> emptyMemory )
         {
@@ -165,8 +165,8 @@ public partial class ThrowTests
 
     public static void CheckNotNullOrEmptyArgument_throws_ArgumentException_for_ReadOnlyMemory()
     {
-        Check( Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentException>() );
-        Check( Util.Invokable( () => f( "".ToArray() ) ).ShouldThrow<ArgumentException>() );
+        Check( Should.Throw<ArgumentException>( () => f( null! ) ) );
+        Check( Should.Throw<ArgumentException>( () => f( "".ToArray() ) ) );
 
         static void f( ReadOnlyMemory<char> emptyROMemory )
         {
@@ -183,7 +183,7 @@ public partial class ThrowTests
     [Test]
     public void CheckArgument_throws_ArgumentException_with_the_faulty_expression()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentException>()
+        Should.Throw<ArgumentException>( () => f( null! ) )
                                           .Message.ShouldBe( "Invalid argument: 'o is string[] array && array.Length > 3 && array[0] == \"First\"' should be true." );
 
         static void f( object o )
@@ -195,7 +195,7 @@ public partial class ThrowTests
     [Test]
     public void CheckArgument_with_message_and_faulty_expression()
     {
-        Util.Invokable( () => f( null! ) ).ShouldThrow<ArgumentException>()
+        Should.Throw<ArgumentException>( () => f( null! ) )
                                           .Message.ShouldBe( "The object must be a non null string array. (Parameter 'o != null && o is string[] array')" );
 
         static void f( object o )
@@ -207,7 +207,7 @@ public partial class ThrowTests
     [Test]
     public void CheckOutOfRangeArgument_throws_ArgumentOutOfRangeException_with_the_faulty_expression()
     {
-        Util.Invokable( () => f( -5 ) ).ShouldThrow<ArgumentOutOfRangeException>()
+        Should.Throw<ArgumentOutOfRangeException>( () => f( -5 ) )
                                                   .Message.ShouldBe( "Invalid argument: 'index is >= 0 and <= 15' should be true." );
 
         static void f( int index )
@@ -219,7 +219,7 @@ public partial class ThrowTests
     [Test]
     public void CheckOutOfRangeArgument_with_message_and_faulty_expression()
     {
-        Util.Invokable( () => f( -5 ) ).ShouldThrow<ArgumentOutOfRangeException>()
+        Should.Throw<ArgumentOutOfRangeException>( () => f( -5 ) )
                                        .Message.ShouldBe( "Must be between 0 and 15. (Parameter 'index is >= 0 and <= 15')" );
 
         static void f( int index )
@@ -233,7 +233,7 @@ public partial class ThrowTests
     {
         bool _canRun = false;
 
-        Util.Invokable( () => Run() ).ShouldThrow<InvalidOperationException>()
+        Should.Throw<InvalidOperationException>( () => Run() )
                                      .Message.ShouldBe( "Invalid state: '_canRun' should be true." );
 
         void Run()
@@ -247,7 +247,7 @@ public partial class ThrowTests
     {
         bool _canRun = false;
 
-        Util.Invokable( () => Run() ).ShouldThrow<InvalidOperationException>()
+        Should.Throw<InvalidOperationException>( () => Run() )
                                      .Message.ShouldBe( "This should be able to run. (Expression: '_canRun')" );
 
         void Run()
@@ -261,7 +261,7 @@ public partial class ThrowTests
     [Test]
     public void CheckData_throws_InvalidDataException_with_the_faulty_expression()
     {
-        Util.Invokable( () => ProcessData() ).ShouldThrow<InvalidDataException>()
+        Should.Throw<InvalidDataException>( () => ProcessData() )
                                              .Message.ShouldBe( "Invalid data: '_someData.Length > 0' should be true." );
 
         static void ProcessData()
@@ -274,7 +274,7 @@ public partial class ThrowTests
     [Test]
     public void CheckData_with_message_and_faulty_expression()
     {
-        Util.Invokable( () => ProcessData() ).ShouldThrow<InvalidDataException>()
+        Should.Throw<InvalidDataException>( () => ProcessData() )
                                              .Message.ShouldBe( "The data must not be empty. (Expression: '_someData.Length > 0')" );
 
         static void ProcessData()
@@ -289,10 +289,10 @@ public partial class ThrowTests
     {
         Throw.DebugAssert( 1 == 1 );
 #if DEBUG
-        Util.Invokable( () => Bug() ).ShouldThrow<CKException>()
+        Should.Throw<CKException>( () => Bug() )
                                      .Message.ShouldMatch( @".*'1 == 0'.*?ThrowTests\.cs@.*" );
 #else
-        Util.Invokable( () => Bug() ).ShouldNotThrow();
+        Should.NotThrow( () => Bug() );
 #endif
 
         static void Bug() => Throw.DebugAssert( 1 == 0 );
@@ -303,9 +303,9 @@ public partial class ThrowTests
     {
         Throw.DebugAssert( "Always true.", 1 == 1 );
 #if DEBUG
-        Util.Invokable( Bug ).ShouldThrow<CKException>().Message.ShouldMatch( @".* This can't be true\. - '1 == 0'.*ThrowTests\.cs@.*" );
+        Should.Throw<CKException>( () => Bug() ).Message.ShouldMatch( @".* This can't be true\. - '1 == 0'.*ThrowTests\.cs@.*" );
 #else
-        Util.Invokable( Bug ).ShouldNotThrow();
+        Should.NotThrow( () => Bug() );
 #endif
 
         static void Bug() => Throw.DebugAssert( "This can't be true.", 1 == 0 );

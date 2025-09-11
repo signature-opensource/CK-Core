@@ -86,7 +86,7 @@ public class DateTimeStampTests
         CheckMatchAndParse( d1 );
 
         DateTimeStamp.TryParse( "nop", out var d2 ).ShouldBeFalse();
-        Util.Invokable( () => DateTimeStamp.Parse( "" ) ).ShouldThrow<FormatException>();
+        Should.Throw<FormatException>( () => DateTimeStamp.Parse( "" ) );
 
         static void CheckMatchAndParse( DateTimeStamp d1 )
         {
@@ -104,7 +104,7 @@ public class DateTimeStampTests
 
             DateTimeStamp.TryParse( s, out var failed ).ShouldBeFalse();
             failed.ShouldBe( DateTimeStamp.Unknown );
-            Util.Invokable( () => DateTimeStamp.Parse( s ) ).ShouldThrow<FormatException>();
+            Should.Throw<FormatException>( () => DateTimeStamp.Parse( s ) );
         }
     }
 

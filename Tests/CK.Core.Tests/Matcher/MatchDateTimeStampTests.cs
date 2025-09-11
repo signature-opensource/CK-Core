@@ -22,7 +22,7 @@ public class MatchDateTimeStampTests
 
         s = t.ToString( FileUtil.FileNameUniqueTimeUtcFormat ).Insert( 2, "X" ).AsSpan();
         s.TryMatchFileNameUniqueTimeUtcFormat( out _ ).ShouldBeFalse();
-        s.TryMatchInt32( out int i ).ShouldBeTrue();
+        s.TryMatchInteger( out int i ).ShouldBeTrue();
         i.ShouldBe( 20 );
     }
 
@@ -46,7 +46,7 @@ public class MatchDateTimeStampTests
 
         m = new ROSpanCharMatcher( s.Insert( 2, "X" ) );
         m.TryMatchDateTimeStamp( out parsed ).ShouldBeFalse();
-        m.TryMatchInt32( out int i ).ShouldBeTrue();
+        m.TryMatchInteger( out int i ).ShouldBeTrue();
         i.ShouldBe( 20 );
 
         m = new ROSpanCharMatcher( s.Insert( s.Length - 2, "X" ) );
@@ -60,8 +60,8 @@ public class MatchDateTimeStampTests
 
     [TestCase( "A", "@0-DateTimeStamp|@0--UTC time" )]
     [TestCase( "2021-12-21 14h37.18.5195853(3", "@0-DateTimeStamp|@29--Character ')'" )]
-    [TestCase( "2021-12-21 14h37.18.5195853(X", "@0-DateTimeStamp|@28--Integer between 0 and 255 (without leading zeros)" )]
-    [TestCase( "2021-12-21 14h37.18.5195853(", "@0-DateTimeStamp|@28--Integer between 0 and 255 (without leading zeros)" )]
+    [TestCase( "2021-12-21 14h37.18.5195853(X", "@0-DateTimeStamp|@28--A Byte" )]
+    [TestCase( "2021-12-21 14h37.18.5195853(", "@0-DateTimeStamp|@28--A Byte" )]
     public void match_methods_must_set_an_error( string s, string errors )
     {
         var m = new ROSpanCharMatcher( s );

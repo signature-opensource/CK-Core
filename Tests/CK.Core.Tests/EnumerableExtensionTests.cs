@@ -76,8 +76,8 @@ public class EnumerableExtensionTests
         listWithoutDuplicate.IsSortedLarge().ShouldBeTrue();
 
         listWithDuplicate = null!;
-        Util.Invokable( () => listWithDuplicate.IsSortedLarge() ).ShouldThrow<NullReferenceException>();
-        Util.Invokable( () => listWithDuplicate.IsSortedStrict() ).ShouldThrow<NullReferenceException>();
+        Should.Throw<NullReferenceException>( () => listWithDuplicate.IsSortedLarge() );
+        Should.Throw<NullReferenceException>( () => listWithDuplicate.IsSortedStrict() );
     }
 
     [Test]
@@ -132,8 +132,8 @@ public class EnumerableExtensionTests
 
         t.MaxBy( i => i, ( x, y ) => x - y ).ShouldBe( 12 );
 
-        Util.Invokable( () => t.MaxBy<int, int>( null! ) ).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => t.MaxBy<int, int>( null! ) );
         t = null!;
-        Util.Invokable( () => t.MaxBy( Util.FuncIdentity ) ).ShouldThrow<NullReferenceException>();
+        Should.Throw<NullReferenceException>( () => t.MaxBy( Util.FuncIdentity ) );
     }
 }

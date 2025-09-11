@@ -1,7 +1,11 @@
 using System;
+using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CK.Core;
 
@@ -33,7 +37,7 @@ public static class ReadOnlySpanCharExtensions
     /// <param name="head">This head.</param>
     /// <param name="value">The string value to match.</param>
     /// <param name="comparison">How to compare.</param>
-    /// <returns>True on success, false otherwise.</returns>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
     public static bool TryMatch( this ref ReadOnlySpan<char> head, ReadOnlySpan<char> value, StringComparison comparison = StringComparison.Ordinal )
     {
@@ -51,7 +55,7 @@ public static class ReadOnlySpanCharExtensions
     /// <param name="head">This head.</param>
     /// <param name="value">The character to match.</param>
     /// <param name="comparison">How to compare.</param>
-    /// <returns>True on success, false otherwise.</returns>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
     [MethodImpl( MethodImplOptions.AggressiveInlining )]
     public static bool TryMatch( this ref ReadOnlySpan<char> head, char value, StringComparison comparison = StringComparison.Ordinal )
     {
@@ -69,7 +73,7 @@ public static class ReadOnlySpanCharExtensions
     /// </summary>
     /// <param name="head">The head.</param>
     /// <param name="minCount">Minimal number of white spaces to skip.</param>
-    /// <returns>True on success, false if <paramref name="minCount"/> white spaces cannot be skipped before the end of the head.</returns>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
     public static bool TrySkipWhiteSpaces( this ref ReadOnlySpan<char> head, int minCount = 1 )
     {
         int i = 0;
@@ -84,7 +88,7 @@ public static class ReadOnlySpanCharExtensions
     }
 
     /// <summary>
-    /// Skips any number of white spaces and always returns true.
+    /// Skips any number of white spaces (including none) and always returns true.
     /// </summary>
     /// <param name="head">The head.</param>
     /// <returns>Always true.</returns>
@@ -98,15 +102,54 @@ public static class ReadOnlySpanCharExtensions
     }
 
     /// <summary>
+    /// Tries to skip a sequence of characters for which <paramref name="predicate"/> returns true.
+    /// Use <paramref name="minCount"/> = 0 to skip any number of characters (including none) and always returns true.
+    /// </summary>
+    /// <param name="head">The head.</param>
+    /// <param name="predicate">The predicate to match.</param>
+    /// <param name="minCount">Minimal number of characters that must be skipped.</param>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
+    public static bool TrySkip( this ref ReadOnlySpan<char> head, Func<char, bool> predicate, int minCount = 1 )
+    {
+        int i = 0;
+        int len = head.Length;
+        while( len != 0 && predicate( head[i] ) ) { ++i; --len; }
+        if( i >= minCount )
+        {
+            head = head.Slice( i );
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to skip a sequence of characters.
+    /// Use <paramref name="minCount"/> = 0 to skip any number of characters (including none) and always returns true.
+    /// </summary>
+    /// <param name="head">The head.</param>
+    /// <param name="values">The values to skip.</param>
+    /// <param name="minCount">Minimal number of characters that must be skipped.</param>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
+    public static bool TrySkip( this ref ReadOnlySpan<char> head, SearchValues<char> values, int minCount = 1 )
+    {
+        int i = 0;
+        int len = head.Length;
+        while( len != 0 && values.Contains( head[i] ) ) { ++i; --len; }
+        if( i >= minCount )
+        {
+            head = head.Slice( i );
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Tries to skip a sequence of decimal digits (0-9).
-    /// Use <paramref name="minCount"/> = 0 to skip any number of decimal digits.
+    /// Use <paramref name="minCount"/> = 0 to skip any number of characters (including none) and always returns true.
     /// </summary>
     /// <param name="head">The head.</param>
     /// <param name="minCount">Minimal number of decimal digits to skip.</param>
-    /// <returns>
-    /// True on success, false if <paramref name="minCount"/> decimal digits cannot be skipped before
-    /// another character or the end of the head.
-    /// </returns>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
     public static bool TrySkipDigits( this ref ReadOnlySpan<char> head, int minCount = 1 )
     {
         int i = 0;
@@ -122,29 +165,7 @@ public static class ReadOnlySpanCharExtensions
     }
 
     /// <summary>
-    /// Tries to match a sequence of decimal digits (0-9).
-    /// </summary>
-    /// <param name="head">The head.</param>
-    /// <param name="minCount">Minimal number of decimal digits to match.</param>
-    /// <param name="digits">Resulting span of digits.</param>
-    /// <returns>
-    /// True on success, false if <paramref name="minCount"/> decimal digits cannot be matched before
-    /// another character or the end of the head.
-    /// </returns>
-    public static bool TryMatchDigits( this ref ReadOnlySpan<char> head, out ReadOnlySpan<char> digits, int minCount = 1 )
-    {
-        var h = head;
-        if( head.TrySkipDigits( minCount ) )
-        {
-            digits = h.Slice( 0, h.Length - head.Length );
-            return true;
-        }
-        digits = default;
-        return false;
-    }
-
-    /// <summary>
-    /// Tries to parse a Guid.
+    /// Tries to match a Guid.
     /// </summary>
     /// <remarks>
     /// Any of the 5 forms of Guid can be matched:
@@ -158,7 +179,7 @@ public static class ReadOnlySpanCharExtensions
     /// </remarks>
     /// <param name="head">This head.</param>
     /// <param name="id">The result Guid. <see cref="Guid.Empty"/> on failure.</param>
-    /// <returns>True on success, false otherwise.</returns>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
     public static bool TryMatchGuid( this ref ReadOnlySpan<char> head, out Guid id )
     {
         id = Guid.Empty;
@@ -218,11 +239,11 @@ public static class ReadOnlySpanCharExtensions
     }
 
     /// <summary>
-    /// Tries to parse a boolean "true" or "false" (case insensitive).
+    /// Tries to match a boolean "true" or "false" (case insensitive).
     /// </summary>
     /// <param name="head">This head.</param>
     /// <param name="b">The result boolean. False on failure.</param>
-    /// <returns>True on success, false otherwise.</returns>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
     public static bool TryMatchBool( this ref ReadOnlySpan<char> head, out bool b )
     {
         b = false;
@@ -237,114 +258,225 @@ public static class ReadOnlySpanCharExtensions
         return false;
     }
 
-    /// <summary>
-    /// Tries to parse an hexadecimal values of 1 to 16 '0'-'9', 'A'-'F' or 'a'-'f' digits.
-    /// </summary>
-    /// <param name="head">This head.</param>
-    /// <param name="value">Resulting value on success.</param>
-    /// <param name="minDigit">Minimal digit count. Must be between 1 and 16 and smaller or equal to <paramref name="maxDigit"/>.</param>
-    /// <param name="maxDigit">Maximal digit count. Must be between 1 and 16.</param>
-    /// <returns>True on success, false otherwise.</returns>
-    public static bool TryMatchHexNumber( this ref ReadOnlySpan<char> head, out ulong value, int minDigit = 1, int maxDigit = 16 )
+    // IBinaryIntegerParseAndFormatInfo<TSelf> is internal... :-(
+    // We combine IsSigned and MaxHexDigitCount here.
+    static int GetMaxHexDigitCount<T>() where T : IBinaryInteger<T>
     {
-        Throw.CheckArgument( minDigit > 0 );
-        Throw.CheckArgument( maxDigit <= 16 );
-        Throw.CheckArgument( minDigit <= maxDigit );
-        value = 0;
-        if( !head.IsEmpty )
+        if( typeof( T ) == typeof( int ) ) return ~9;
+        if( typeof( T ) == typeof( uint ) ) return 8;
+        if( typeof( T ) == typeof( long ) ) return ~17;
+        if( typeof( T ) == typeof( ulong ) ) return 16;
+        if( typeof( T ) == typeof( byte ) ) return 2;
+        if( typeof( T ) == typeof( sbyte ) ) return ~3;
+        if( typeof( T ) == typeof( char ) ) return 4;
+        if( typeof( T ) == typeof( short ) ) return ~5;
+        if( typeof( T ) == typeof( ushort ) ) return 4;
+        if( typeof( T ) == typeof( Int128 ) ) return ~33;
+        if( typeof( T ) == typeof( UInt128 ) ) return 32;
+        return Throw.NotSupportedException<int>();
+    }
+
+    // From https://source.dot.net/#System.Private.CoreLib/src/libraries/Common/src/System/Number.NumberBuffer.cs,13
+    // - For IFloatingPoint<T>.
+    //   The additional byte, per length, is not for the terminating null in our case but for the
+    //   optional leading '-'.
+    // This is... a lot... And the reason is not obvious.
+    // See for instance: https://stackoverflow.com/questions/1701055/what-is-the-maximum-length-in-chars-needed-to-represent-any-double-value
+    // This is "safe" as we use the same limits as the .Net parser algorithm... And this is a max (above which we don't call TryParse).
+    // If the actual value cannot be parsed, it cannot and everything is fine.
+    //
+    internal const int DoubleNumberBufferLength = 767 + 1 + 1;  // 767 for the longest input + 1 for rounding: 4.9406564584124654E-324
+    internal const int SingleNumberBufferLength = 112 + 1 + 1;  // 112 for the longest input + 1 for rounding: 1.40129846E-45
+    internal const int DecimalNumberBufferLength = 29 + 1 + 1;  // 29 for the longest input + 1 for rounding
+    internal const int HalfNumberBufferLength = 21 + 1 + 1; // 21 for the longest input + 1 for rounding: 0.000122010707855224609375
+    static int GetMaxFloatingCharCount<T>() where T : IFloatingPoint<T>
+    {
+        if( typeof( T ) == typeof( double ) ) return DoubleNumberBufferLength;
+        if( typeof( T ) == typeof( float ) ) return SingleNumberBufferLength;
+        if( typeof( T ) == typeof( decimal ) ) return DecimalNumberBufferLength;
+        if( typeof( T ) == typeof( Half ) ) return HalfNumberBufferLength;
+        return Throw.NotSupportedException<int>();
+    }
+
+    // - For integers.
+    //   3 for the longest input: 255.
+    internal const int UInt8NumberBufferLength = 3;
+    //   4 for the longest input: -128.
+    internal const int Int8NumberBufferLength = ~4;
+    //   5 for the longest input: 32767.
+    internal const int UInt16NumberBufferLength = 5;
+    //   6 for the longest input: -32768.
+    internal const int Int16NumberBufferLength = ~6;
+    //   10 for the longest input: 4294967295.
+    internal const int UInt32NumberBufferLength = 10;
+    //   11 for the longest input: -2147483648.
+    internal const int Int32NumberBufferLength = ~11;
+    //   20 for the longest input: 18446744073709551615.
+    internal const int UInt64NumberBufferLength = 20;
+    //   20 for the longest input: -9223372036854775807.
+    internal const int Int64NumberBufferLength = ~20;
+    //   39 for the longest input: 340282366920938463463374607431768211455.
+    internal const int UInt128NumberBufferLength = 39;
+    //   40 for the longest input: -170141183460469231731687303715884105728.
+    internal const int Int128NumberBufferLength = ~40;
+    static int GetMaxIntegerCharCount<T>() where T : IBinaryInteger<T>
+    {
+        if( typeof( T ) == typeof( int ) ) return Int32NumberBufferLength;
+        if( typeof( T ) == typeof( long ) ) return Int64NumberBufferLength;
+        if( typeof( T ) == typeof( uint ) ) return UInt32NumberBufferLength;
+        if( typeof( T ) == typeof( ulong ) ) return UInt64NumberBufferLength;
+        if( typeof( T ) == typeof( short ) ) return Int16NumberBufferLength;
+        if( typeof( T ) == typeof( ushort ) ) return UInt16NumberBufferLength;
+        if( typeof( T ) == typeof( byte ) ) return UInt8NumberBufferLength;
+        if( typeof( T ) == typeof( sbyte ) ) return Int8NumberBufferLength;
+        if( typeof( T ) == typeof( Int128 ) ) return Int128NumberBufferLength;
+        if( typeof( T ) == typeof( UInt128 ) ) return UInt128NumberBufferLength;
+        return Throw.NotSupportedException<int>();
+    }
+
+    /// <summary>
+    /// Tries to skip a sequence of hexadecimal digits (0-9, a-f, A-F).
+    /// Use <paramref name="minCount"/> = 0 to skip any number of characters (including none) and always returns true.
+    /// </summary>
+    /// <param name="head">The head.</param>
+    /// <param name="minCount">Minimal number of decimal digits to skip.</param>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
+    public static bool TrySkipHexDigits( this ref ReadOnlySpan<char> head, int minCount = 1 )
+    {
+        int i = 0;
+        int len = head.Length;
+        while( len != 0 && char.IsAsciiHexDigit( head[i] )) { ++i; --len; }
+        if( i >= minCount )
         {
-            int idx = 0;
-            int len = head.Length;
-            while( --maxDigit >= 0 && --len >= 0 )
-            {
-                int cN = head[idx].HexDigitValue();
-                if( cN < 0 ) break;
-                ++idx;
-                value <<= 4;
-                value |= (uint)cN;
-            }
-            if( idx >= minDigit )
-            {
-                head = head.Slice( idx );
-                return true;
-            }
+            head = head.Slice( i );
+            return true;
         }
         return false;
     }
 
+    /// <inheritdoc cref="TryMatchHexNumber{T}(ref ReadOnlySpan{char}, out T, bool)"/>.
+    /// <remarks>
+    /// Specific implementation for <see cref="char"/>.
+    /// </remarks>
+    public static bool TryMatchHexNumber( this ref ReadOnlySpan<char> head, out char value, bool allowLessDigits = false )
+    {
+        if( head.IsEmpty
+            || (!allowLessDigits && head.Length < 4)
+            || !char.IsAsciiHexDigit( head[0] ) )
+        {
+            value = default;
+            return false;
+        }
+        int len;
+        if( allowLessDigits )
+        {
+            len = 1;
+            while( head.Length > len && char.IsAsciiHexDigit( head[len] ) ) ++len;
+        }
+        else len = 4;
+        if( ushort.TryParse( head.Slice( 0, len ), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var v ) )
+        {
+            value = (char)v;
+            head.Slice( len );
+            return true;
+        }
+        value = default;
+        return false;
+    }
+
     /// <summary>
-    /// Tries to match an Int32 value. A signed integer starts with a '-' and must not be followed by white spaces.
-    /// If the value is too big for an Int32, it fails.
+    /// Tries to match an hexadecimal values of 1 to 16 '0'-'9', 'A'-'F' or 'a'-'f' (without '0x' prefix) digits and
+    /// forward the head on success.
     /// <para>
-    /// When <paramref name="allowLeadingZeros"/> is false, the value must not start with '0' ('0' is valid but '0d', where d is any digit, is not)
-    /// and '-0' is valid but '-0d' (where d is any digit) is not.
+    /// This applies to <see cref="int"/>, <see cref="long"/>, <see cref="sbyte"/>, <see cref="short"/>,
+    /// <see cref="Int128"/> or their unsigned <see cref="uint"/>, <see cref="ulong"/>, <see cref="byte"/>, <see cref="ushort"/>,
+    /// <see cref="UInt128"/> and <see cref="char"/>.
+    /// </para>
+    /// <para>
+    /// Char is handled by a dedicated implementation because <see cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)"/>
+    /// for char parses a... char (regardless of the provided NumberStyles).
     /// </para>
     /// </summary>
     /// <param name="head">This head.</param>
-    /// <param name="i">The result integer. 0 on failure.</param>
-    /// <param name="minValue">Optional minimal value.</param>
-    /// <param name="maxValue">Optional maximal value.</param>
-    /// <param name="allowLeadingZeros">True to allow leading zeros.</param>
-    /// <returns>True on success, false otherwise.</returns>
-    public static bool TryMatchInt32( this ref ReadOnlySpan<char> head, out int i, int minValue = int.MinValue, int maxValue = int.MaxValue, bool allowLeadingZeros = false )
+    /// <param name="value">Resulting value on success.</param>
+    /// <param name="allowLessDigits">
+    /// By default, even a <see cref="UInt128"/> matches 'F' (or 'f') with a result of 15.
+    /// When true, the exact count of hexadecimal digits that <typeparamref name="T"/> requires must be found
+    /// (for a UInt128, it is 32 characters).
+    /// </param>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
+    public static bool TryMatchHexNumber<T>( this ref ReadOnlySpan<char> head, [MaybeNullWhen(false)]out T value, bool allowLessDigits = true )
+        where T : IBinaryInteger<T>
     {
-        i = 0;
-        long value = 0;
-        bool signed;
-        if( head.IsEmpty ) return false;
-        ReadOnlySpan<char> h = head;
-        if( (signed = h[0] == '-') )
+        if( head.IsEmpty )
         {
-            h = h.Slice( 1 );
-            if( h.IsEmpty || minValue >= 0 ) return false;
+            value = default;
+            return false;
         }
-        char c;
-        while( h[0] == '0' )
+        // The first digit (or the 2 first digits for signed) are handled out of the loop.  
+        int len = 0;
+        if( head[0] == '-' )
         {
-            h = h.Slice( 1 );
-            if( h.Length > 0 && (c = h[0]) >= '0' && c <= '9' )
+            len = 1;
+            if( head.Length == 1 || !char.IsAsciiHexDigit( head[1] ) )
             {
-                if( allowLeadingZeros )
-                {
-                    if( c == '0' ) continue;
-                    break;
-                }
+                value = default;
                 return false;
             }
-            head = h;
+            len = 2;
+        }
+        else
+        {
+            if( !char.IsAsciiHexDigit( head[0] ) )
+            {
+                value = default;
+                return false;
+            }
+            len = 1;
+        }
+        int maxCount = GetMaxHexDigitCount<T>();
+        if( maxCount > 0 )
+        {
+            // T is an unsigned.
+            if( len == 2 ) // We found a -X.
+            {
+                value = default;
+                return false;
+            }
+        }
+        else
+        {
+            // T is a signed type.
+            maxCount = ~maxCount;
+        }
+        for( ; len < maxCount; ++len )
+        {
+            if( len >= head.Length || !char.IsAsciiHexDigit( head[len] ) )
+            {
+                if( !allowLessDigits )
+                {
+                    value = default;
+                    return false;
+                }
+                break;
+            }
+        }
+        if( T.TryParse( head.Slice( 0, len ), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out value ) )
+        {
+            head = head.Slice( len );
             return true;
         }
-        int idx = 0;
-        unchecked
-        {
-            long iMax = Int32.MaxValue;
-            if( signed ) iMax++;
-            for( ; idx < h.Length; idx++ )
-            {
-                if( (c = h[idx]) < '0' || c > '9' ) break;
-                value = value * 10 + (c - '0');
-                if( value > iMax ) break;
-            }
-        }
-        if( idx > 0 )
-        {
-            if( signed ) value = -value;
-            if( value >= minValue && value <= maxValue )
-            {
-                i = (int)value;
-                head = h.Slice( idx );
-                return true;
-            }
-        }
+        value = default;
         return false;
     }
 
     /// <summary>
-    /// Tries to skip a double value. This skips a pattern like the regular expression "^-?[0-9]+(\.[0-9]+)?((e|E)(\+|-)?[0-9]+)?".
+    /// Tries to skip a floating number value.
+    /// This skips a pattern like the regular expression "^-?[0-9]+(\.[0-9]+)?((e|E)(\+|-)?[0-9]+)?".
     /// </summary>
     /// <param name="head">This head.</param>
-    /// <returns>True on success, false otherwise.</returns>
-    public static bool TrySkipDouble( this ref ReadOnlySpan<char> head )
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
+    public static bool TrySkipFloatingNumber( this ref ReadOnlySpan<char> head )
     {
         if( head.Length == 0 ) return false;
         var h = head;
@@ -367,38 +499,98 @@ public static class ReadOnlySpanCharExtensions
         return true;
     }
 
+    [Obsolete( "Use TryMatchFloatingNumber instead." )]
+    public static bool TryMatchDouble( this ref ReadOnlySpan<char> head, out double value )
+        => TryMatchFloatingNumber<double>( ref head, out value );
+
     /// <summary>
-    /// Tries to match a double value.
-    /// A first shallow parse is unfortunately required (calling <see cref="TrySkipDouble(ref ReadOnlySpan{char})"/>) since
-    /// parsing double is a fairly complex task and the standard <see cref="Double.TryParse(ReadOnlySpan{char}, out double)"/>
-    /// (like all other TryParse) doesn't give us the actual parsed length: we have to figure it out first.
+    /// Tries to match a <see cref="double"/>, <see cref="float"/>, <see cref="Half"/> or <see cref="decimal"/>.
     /// </summary>
     /// <param name="head">This head.</param>
-    /// <param name="value">The result double. 0.0 on failure.</param>
-    /// <returns>True on success, false otherwise.</returns>
-    public static bool TryMatchDouble( this ref ReadOnlySpan<char> head, out double value )
+    /// <param name="value">The result value.</param>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
+    public static bool TryMatchFloatingNumber<T>( this ref ReadOnlySpan<char> head, [MaybeNullWhen(false)]out T value )
+        where T : IFloatingPoint<T>
     {
-        value = 0;
         var h = head;
-        if( !TrySkipDouble( ref h ) ) return false;
-        int len = head.Length - h.Length;
-        if( !double.TryParse( head.Slice( 0, len ), NumberStyles.Float, CultureInfo.InvariantCulture, out value ) )
+        if( TrySkipFloatingNumber( ref h ) )
         {
-            return false;
+            var len = head.Length - h.Length;
+            if( len <= GetMaxFloatingCharCount<T>()
+                && T.TryParse( head.Slice( 0, len ), NumberStyles.Float, CultureInfo.InvariantCulture, out value ) )
+            {
+                head = h;
+                return true;
+            }
         }
-        head = head.Slice( len );
-        return true;
+        value = default;
+        return false;
     }
 
     /// <summary>
-    /// Tries to skip a quoted string. This handles escaped \" and \\ but not other
-    /// escaped characters: the string may be invalid regarding JSON string grammar.
+    /// Tries to skip an integer value. This skips a pattern like the regular expression "^-?[0-9]+".
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="allowMinus">False to accept only unsigned pattern (no leading '-').</param>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
+    public static bool TrySkipInteger( this ref ReadOnlySpan<char> head, bool allowMinus = true )
+    {
+        if( allowMinus ) head.TryMatch( '-' );
+        return head.TrySkipDigits( 1 );
+    }
+
+    /// <summary>
+    /// Tries to match the decimal representation of <see cref="int"/>, <see cref="long"/>, <see cref="sbyte"/>, <see cref="short"/>,
+    /// <see cref="Int128"/> or their unsigned <see cref="uint"/>, <see cref="ulong"/>, <see cref="byte"/>, <see cref="ushort"/>,
+    /// <see cref="UInt128"/>.
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="value">The result value.</param>
+    /// <returns>True on success (and the <paramref name="head"/> is forwarded), false otherwise (and the head is not moved).</returns>
+    public static bool TryMatchInteger<T>( this ref ReadOnlySpan<char> head, [MaybeNullWhen( false )] out T value )
+        where T : IBinaryInteger<T>
+    {
+        var h = head;
+        if( TrySkipInteger( ref h ) )
+        {
+            var len = head.Length - h.Length;
+            var maxLen = GetMaxIntegerCharCount<T>();
+            if( maxLen > 0 )
+            {
+                // Unsigned!
+                if( head[0] == '-' )
+                {
+                    value = default;
+                    return false;
+                }
+            }
+            else
+            {
+                maxLen = ~maxLen;
+            }
+            if( len <= maxLen
+                && T.TryParse( head.Slice( 0, len ), NumberStyles.Integer, CultureInfo.InvariantCulture, out value ) )
+            {
+                head = h;
+                return true;
+            }
+        }
+        value = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to skip a quoted string. This handles escaped \" and \\ but no other
+    /// escaped characters: the string may be invalid regarding JSON string grammar (and
+    /// for <see cref="TryMatchJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>).
+    /// <para>
     /// See the string definition https://www.json.org/json-en.html.
+    /// </para>
     /// </summary>
     /// <param name="head">This head.</param>
     /// <param name="allowNull">True to allow 'null' token.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public static bool TrySkipJSONQuotedString( this ref ReadOnlySpan<char> head, bool allowNull = false )
+    public static bool TrySkipJsonQuotedString( this ref ReadOnlySpan<char> head, bool allowNull = false )
     {
         if( head.Length == 0 ) return false;
         if( head[0] != '"' )
@@ -411,12 +603,185 @@ public static class ReadOnlySpanCharExtensions
             int idx = h.IndexOf( '"' );
             if( idx < 0 ) return false;
             int rIdx = idx - 1;
-            while( rIdx > 0 && h[idx - 1] == '\\' ) rIdx--;
-            if( ((idx - rIdx) & 1) == 0 ) break;
+            while( rIdx >= 0 && h[rIdx] == '\\' ) rIdx--;
+            int escapeCountPlusQuote = idx - rIdx;
             h = h.Slice( idx + 1 );
+            if( (escapeCountPlusQuote & 1) == 1 )
+            {
+                head = h;
+                return true;
+            }
+            // This quote is escaped. Skip it.
         }
-        head = h.Slice( 1 );
+    }
+
+    /// <summary>
+    /// Tries to match 'null' or a JSON quoted string.
+    /// See <see cref="TryMatchJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>.
+    /// <para>
+    /// On 'null', this returns true and the <paramref name="destination"/> is untouched.
+    /// </para>
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="destination">
+    /// The string builder into which the successfully evaluated content will be appended.
+    /// Will be allocated only if needed (may be allocated on failure but will be empty).
+    /// </param>
+    /// <returns>True on success, false otherwise.</returns>
+    public static bool TryMatchNullableJsonQuotedString( this ref ReadOnlySpan<char> head,
+                                                        ref StringBuilder? destination )
+    {
+        if( head.Length == 0 ) return false;
+        if( head[0] != '"' )
+        {
+            return TryMatch( ref head, "null" );
+        }
+        return TryMatchJsonQuotedString( ref head, ref destination );
+
+    }
+
+    /// <summary>
+    /// Tries to match a JSON quoted string. All \uXXXX are evaluated, invalid escaped characters (like \' or \x) will fail,
+    /// only \r, \n, \b, \t, \f, \uXXXX, \\, \/ and \" are valid and are evaluated (Note: ECMA-262 allows encoding U+000B as "\v",
+    /// but ECMA-404 does not, so we handle it).
+    /// See the string definition https://www.json.org/json-en.html.
+    /// <para>
+    /// On error, the <paramref name="destination"/> is unchanged.
+    /// </para>
+    /// <para>
+    /// To allow the 'null' token, use <see cref="TryMatchNullableJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="destination">
+    /// The string builder into which the successfully evaluated content will be appended.
+    /// Will be allocated only if needed (may be allocated on failure but will be empty).
+    /// </param>
+    /// <returns>True on success, false otherwise.</returns>
+    static bool TryMatchJsonQuotedString( ref ReadOnlySpan<char> head, ref StringBuilder? destination )
+    {
+        if( head.Length == 0 || head[0] != '"' )
+        {
+            return false;
+        }
+        // This restores the destination on error.
+        static bool Error( int destinationStartIndex, StringBuilder? destination )
+        {
+            if( destinationStartIndex >= 0 )
+            {
+                Throw.DebugAssert( destination != null );
+                destination.Length = destinationStartIndex;
+            }
+            return false;
+        }
+
+        int destinationStartIndex = -1;
+        int i = 1;
+        int len = head.Length - 1;
+        while( len >= 0 )
+        {
+            if( len == 0 ) return Error( destinationStartIndex, destination );
+            char c = head[i++];
+            --len;
+            if( c == '"' ) break;
+            if( c == '\\' )
+            {
+                if( len == 0 ) return Error( destinationStartIndex, destination );
+                if( destinationStartIndex == -1 )
+                {
+                    Throw.DebugAssert( i >= 2 );
+                    destination ??= new StringBuilder( i + 254 );
+                    destinationStartIndex = destination.Length;
+                    destination.Append( head.Slice( 1, i - 2 ) );
+                }
+                switch( c = head[i++] )
+                {
+                    case 'r': c = '\r'; break;
+                    case 'n': c = '\n'; break;
+                    case 'b': c = '\b'; break;
+                    case 't': c = '\t'; break;
+                    case 'f': c = '\f'; break;
+                    case 'v': c = '\v'; break; // Allowed by ECMA-262.
+                    case 'u':
+                    {
+                        var h = head.Slice( i );
+                        if( !h.TryMatchHexNumber( out char u, allowLessDigits: false ) )
+                        {
+                            return Error( destinationStartIndex, destination );
+                        }
+                        len -= 4;
+                        i += 4;
+                        c = (char)u;
+                        break;
+                    }
+                    case '\\': // These are the only other valid escaped characters in JSON.
+                    case '"':
+                    case '/': break;
+                    default:
+                    {
+                        return Error( destinationStartIndex, destination );
+                    }
+                }
+            }
+            if( destinationStartIndex >= 0 )
+            {
+                Throw.DebugAssert( destination != null );
+                destination.Append( c );
+            }
+        }
+        if( destinationStartIndex == -1 )
+        {
+            int sLen = i - 2;
+            if( sLen > 0 )
+            {
+                destination ??= new StringBuilder( sLen );
+                destination.Append( head.Slice( 1, sLen ) );
+            }
+        }
+        head = head.Slice( i );
         return true;
+    }
+
+    /// <summary>
+    /// Tries to match and evaluate a JSON quoted string.
+    /// See <see cref="TryMatchJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>.
+    /// <para>
+    /// The head must not be on 'null'. Use <see cref="TryMatchNullableJsonQuotedString(ref ReadOnlySpan{char}, out string?)"/>
+    /// to handle 'null' token.
+    /// </para>
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="result">The evaluated string on success, null otherwise.</param>
+    /// <returns>True on success, false otherwise.</returns>
+    public static bool TryMatchJsonQuotedString( this ref ReadOnlySpan<char> head, [NotNullWhen( true )] out string? result )
+    {
+        StringBuilder? b = null;
+        if( TryMatchJsonQuotedString( ref head, ref b ) )
+        {
+            result = b?.ToString() ?? string.Empty;
+            return true;
+        }
+        result = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to match a 'null' or a JSON quoted string and evaluate it.
+    /// See <see cref="TryMatchJsonQuotedString(ref ReadOnlySpan{char}, ref StringBuilder?)"/>.
+    /// </summary>
+    /// <param name="head">This head.</param>
+    /// <param name="result">The result string. Null on 'null' token.</param>
+    /// <returns>True on success, false otherwise.</returns>
+    public static bool TryMatchNullableJsonQuotedString( this ref ReadOnlySpan<char> head, out string? result )
+    {
+        StringBuilder? b = null;
+        if( TryMatchJsonQuotedString( ref head, ref b ) )
+        {
+            result = b?.ToString() ?? string.Empty;
+            return true;
+        }
+        result = null;
+        return head.TryMatch( "null" );
     }
 
     /// <summary>
@@ -424,10 +789,10 @@ public static class ReadOnlySpanCharExtensions
     /// </summary>
     /// <param name="head">This head.</param>
     /// <returns>True on success, false otherwise.</returns>
-    public static bool TrySkipJSONTerminalValue( this ref ReadOnlySpan<char> head )
+    public static bool TrySkipJsonTerminalValue( this ref ReadOnlySpan<char> head )
     {
-        return head.TrySkipJSONQuotedString( true )
-                || head.TrySkipDouble()
+        return head.TrySkipJsonQuotedString( true )
+                || head.TrySkipFloatingNumber()
                 || head.TryMatch( "true" )
                 || head.TryMatch( "false" );
     }

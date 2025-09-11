@@ -223,7 +223,7 @@ public class ReadOnlyTests
         l.IndexOf( i => i == 7 ).ShouldBe( 1 );
         l.IndexOf( i => i == 8 ).ShouldBe( 5 );
         l.IndexOf( i => i == 0 ).ShouldBe( -1 );
-        Util.Invokable(() => l.IndexOf(null!)).ShouldThrow<ArgumentNullException>();
+        Should.Throw<ArgumentNullException>( () => l.IndexOf( null! ) );
     }
 
 }

@@ -310,8 +310,7 @@ public readonly struct DateTimeStamp : IComparable<DateTimeStamp>, IEquatable<Da
         byte uniquifier = 0;
         if( head.TryMatch( '(' ) )
         {
-            if( !head.TryMatchInt32( out int u, 0, 255 ) || !head.TryMatch( ')' ) ) goto error;
-            uniquifier = (byte)u;
+            if( !head.TryMatchInteger( out uniquifier ) || !head.TryMatch( ')' ) ) goto error;
         }
         if( !parse || head.IsEmpty )
         {
