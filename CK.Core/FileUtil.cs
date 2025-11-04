@@ -231,7 +231,7 @@ public static partial class FileUtil
     /// <param name="maxTryBeforeGuid">
     /// Maximum value for short hexadecimal uniquifier before using a base 64 guid suffix. Must greater than 0.
     /// </param>
-    /// <returns>An opened <see cref="FileStream"/>.</returns>
+    /// <returns>The path of the target file.</returns>
     public static string MoveToUniqueTimedFile( string sourceFilePath, string pathPrefix, string fileSuffix, DateTime time, int maxTryBeforeGuid = 512 )
     {
         Throw.CheckNotNullArgument( sourceFilePath );
