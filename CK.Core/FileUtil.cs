@@ -297,33 +297,44 @@ public static partial class FileUtil
             // The second trick is to always create the parent folder:
             //  - Move requires it to exist...
             //  - ... but since we WILL succeed to create the unique folder, we can do it safely.
-            string? originParent = Path.GetTempPath();
             string rootOfPathToCreate = Path.GetPathRoot( path )!;
             var parentOfPathToCreate = Path.GetDirectoryName( path );
             if( parentOfPathToCreate == null ) return false;
+            string? originParent = Path.GetTempPath();
+            bool usedSameVolumeFallback = false;
             if( Path.GetPathRoot( originParent ) != rootOfPathToCreate )
             {
-                // Path to create is not on the same volume as the Temporary folder.
-                // We need to create our origin folder on the same volume: we try to create
-                // it as close as possible to the target folder.
-                originParent = parentOfPathToCreate;
-                Debug.Assert( originParent != null );
-                while( originParent.Length > rootOfPathToCreate.Length
-                        && !Directory.Exists( originParent ) )
-                {
-                    originParent = Path.GetDirectoryName( originParent );
-                    Debug.Assert( originParent != null );
-                }
-                if( originParent.Length > rootOfPathToCreate.Length )
-                {
-                    originParent += DirectorySeparatorString;
-                }
+                originParent = FindSameVolumeOriginParent( parentOfPathToCreate, rootOfPathToCreate );
+                usedSameVolumeFallback = true;
             }
             origin = originParent + Guid.NewGuid().ToString( "N" );
             Directory.CreateDirectory( origin );
             Directory.CreateDirectory( parentOfPathToCreate );
-            Directory.Move( origin, path );
-            return true;
+            try
+            {
+                Directory.Move( origin, path );
+                return true;
+            }
+            catch( IOException ) when( !usedSameVolumeFallback )
+            {
+                // On Linux, GetPathRoot is always "/" regardless of mount point,
+                // so cross-device moves (e.g. /tmp on tmpfs vs /home on ext4) are not
+                // detected above. When Directory.Move fails, retry with an origin
+                // on the same filesystem as the target.
+                try
+                {
+                    Directory.Delete( origin );
+                }
+                catch
+                {
+                    // Forget the temp folder suppression.
+                }
+                originParent = FindSameVolumeOriginParent( parentOfPathToCreate, rootOfPathToCreate );
+                origin = originParent + Guid.NewGuid().ToString( "N" );
+                Directory.CreateDirectory( origin );
+                Directory.Move( origin, path );
+                return true;
+            }
         }
         catch( IOException ex )
         {
@@ -338,6 +349,24 @@ public static partial class FileUtil
             }
         }
         return false;
+    }
+
+    static string FindSameVolumeOriginParent( string parentOfPathToCreate, string rootOfPathToCreate )
+    {
+        // Path to create is not on the same volume as the Temporary folder (or a cross-device
+        // move was detected). We create our origin folder on the same volume: we try to create
+        // it as close as possible to the target folder.
+        string originParent = parentOfPathToCreate;
+        while( originParent.Length > rootOfPathToCreate.Length
+                && !Directory.Exists( originParent ) )
+        {
+            originParent = Path.GetDirectoryName( originParent )!;
+        }
+        if( originParent.Length > rootOfPathToCreate.Length )
+        {
+            originParent += DirectorySeparatorString;
+        }
+        return originParent;
     }
 
 
