@@ -38,7 +38,6 @@ public class CompletableTests
             if( r.Next( 2 ) == 0 ) OverriddenExceptionOnError = OverriddenException;
             var execTime = r.Next( 300 ) - 150;
             ExecutionTime = execTime < 0 ? 0 : execTime;
-            UseTrySet = r.Next( 2 ) == 0;
         }
 
         public bool OnCompletedCalled { get; private set; }
@@ -54,8 +53,6 @@ public class CompletableTests
         public Exception? OverriddenExceptionOnError { get; set; }
 
         public int ExecutionTime { get; set; }
-
-        public bool UseTrySet { get; set; }
 
         public ICompletion Completion => CompletionSource;
 
@@ -88,9 +85,9 @@ public class CompletableTests
         if( c.ExecutionTime > 0 ) await Task.Delay( c.ExecutionTime ).ConfigureAwait( false );
         switch( c.RunAction )
         {
-            case CommandAction.Success: if( c.UseTrySet ) c.CompletionSource.TrySetResult(); else c.CompletionSource.SetResult(); break;
-            case CommandAction.Canceled: if( c.UseTrySet ) c.CompletionSource.TrySetCanceled(); else c.CompletionSource.SetCanceled(); break;
-            case CommandAction.Error: if( c.UseTrySet ) c.CompletionSource.TrySetException( RunException ); else c.CompletionSource.SetException( RunException ); break;
+            case CommandAction.Success: c.CompletionSource.TrySetResult(); break;
+            case CommandAction.Canceled: c.CompletionSource.TrySetCanceled(); break;
+            case CommandAction.Error: c.CompletionSource.TrySetException( RunException ); break;
         }
         // Just to be sure :)
         c.CompletionSource.TrySetException( RunException ).ShouldBeFalse();
@@ -232,9 +229,9 @@ public class CompletableTests
         if( c.ExecutionTime > 0 ) await Task.Delay( c.ExecutionTime ).ConfigureAwait( false );
         switch( c.RunAction )
         {
-            case CommandAction.Success: if( c.UseTrySet ) c.CompletionSource.TrySetResult( 3712 ); else c.CompletionSource.SetResult( 3712 ); break;
-            case CommandAction.Canceled: if( c.UseTrySet ) c.CompletionSource.TrySetCanceled(); else c.CompletionSource.SetCanceled(); break;
-            case CommandAction.Error: if( c.UseTrySet ) c.CompletionSource.TrySetException( RunException ); else c.CompletionSource.SetException( RunException ); break;
+            case CommandAction.Success: c.CompletionSource.TrySetResult( 3712 ); break;
+            case CommandAction.Canceled: c.CompletionSource.TrySetCanceled(); break;
+            case CommandAction.Error: c.CompletionSource.TrySetException( RunException ); break;
         }
         // Just to be sure :)
         c.CompletionSource.TrySetException( RunException ).ShouldBeFalse();
@@ -401,17 +398,17 @@ public class CompletableTests
         if( commandType == "WithResult" )
         {
             var cmd = new SimpleCommand();
-            if( error == "Cancel" ) cmd.CompletionSource.SetCanceled();
-            else if( error == "OperationCanceledException" ) cmd.CompletionSource.SetException( new OperationCanceledException() );
-            else cmd.CompletionSource.SetException( new Exception( "Pouf" ) );
+            if( error == "Cancel" ) cmd.CompletionSource.TrySetCanceled();
+            else if( error == "OperationCanceledException" ) cmd.CompletionSource.TrySetException( new OperationCanceledException() );
+            else cmd.CompletionSource.TrySetException( new Exception( "Pouf" ) );
             cmd.OnCompletedCalled.ShouldBeTrue();
         }
         else
         {
             var cmd = new SimpleCommandNoResult();
-            if( error == "Cancel" ) cmd.CompletionSource.SetCanceled();
-            else if( error == "OperationCanceledException" ) cmd.CompletionSource.SetException( new OperationCanceledException() );
-            else cmd.CompletionSource.SetException( new Exception( "Pouf" ) );
+            if( error == "Cancel" ) cmd.CompletionSource.TrySetCanceled();
+            else if( error == "OperationCanceledException" ) cmd.CompletionSource.TrySetException( new OperationCanceledException() );
+            else cmd.CompletionSource.TrySetException( new Exception( "Pouf" ) );
             cmd.OnCompletedCalled.ShouldBeTrue();
         }
     }

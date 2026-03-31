@@ -98,20 +98,6 @@ public class CompletionSource<TResult> : ICompletion<TResult>, ICompletionSource
     public bool HasBeenCanceled => _tcs.Task.IsCompleted && Volatile.Read( ref _state ) == StateCancel;
 
     /// <summary>
-    /// Transitions the <see cref="Task"/> into the <see cref="TaskStatus.RanToCompletion"/> state.
-    /// An <see cref="InvalidOperationException"/> is thrown if Task is already in one of the three final
-    /// states: <see cref="TaskStatus.RanToCompletion"/>, <see cref="TaskStatus.Faulted"/> or <see cref="TaskStatus.Canceled"/>.
-    /// </summary>
-    /// <param name="result">The command result.</param>
-    public void SetResult( TResult result )
-    {
-        // Changes the status only if it's 0 and use the InvalidOperationException.
-        Interlocked.CompareExchange( ref _state, StateSucces, 0 );
-        _tcs.SetResult( result );
-        _holder.OnCompleted();
-    }
-
-    /// <summary>
     /// Attempts to transition the <see cref="Task"/> into the <see cref="TaskStatus.Canceled"/> state.
     /// </summary>
     /// <param name="result">The command result.</param>
@@ -185,44 +171,6 @@ public class CompletionSource<TResult> : ICompletion<TResult>, ICompletionSource
             ResultCancel = true;
         }
 
-    }
-
-    /// <inheritdoc />
-    public void SetException( Exception exception )
-    {
-        // If a completion occurred, use the InvalidOperarionException raised by SetException.
-        if( Interlocked.CompareExchange( ref _state, StateFailed, 0 ) != 0 ) _tcs.SetException( exception );
-
-        // The original exception may be observed before the completion.
-        // This doesn't really hurt and the OriginalException getter is protected by a check
-        // of the Task.IsCompleted anyway.
-        _exception = exception;
-
-        var o = new OnError( this );
-        try
-        {
-            _holder.OnError( exception, ref o );
-        }
-        catch( Exception ex )
-        {
-            _tcs.SetException( ex );
-            throw;
-        }
-        if( !o.Called ) CompletionSource.ThrowOnErrorCalledRequired( _tcs.SetException );
-
-        if( o.ResultError != null )
-        {
-            _tcs.SetException( o.ResultError );
-        }
-        else if( o.ResultCancel )
-        {
-            _tcs.SetCanceled();
-        }
-        else
-        {
-            _tcs.SetResult( o.Result );
-        }
-        _holder.OnCompleted();
     }
 
     /// <inheritdoc />
@@ -307,33 +255,6 @@ public class CompletionSource<TResult> : ICompletion<TResult>, ICompletionSource
             Called = true;
             ResultCanceled = true;
         }
-    }
-
-    /// <inheritdoc />
-    public void SetCanceled()
-    {
-        if( Interlocked.CompareExchange( ref _state, StateCancel, 0 ) != 0 ) _tcs.SetCanceled();
-
-        var o = new OnCanceled( this );
-        try
-        {
-            _holder.OnCanceled( ref o );
-        }
-        catch( Exception ex )
-        {
-            _tcs.SetException( ex );
-            throw;
-        }
-        if( !o.Called ) CompletionSource.ThrowOnCancelCalledRequired( _tcs.SetException );
-        if( o.ResultCanceled )
-        {
-            _tcs.SetCanceled();
-        }
-        else
-        {
-            _tcs.SetResult( o.Result );
-        }
-        _holder.OnCompleted();
     }
 
     /// <inheritdoc />
