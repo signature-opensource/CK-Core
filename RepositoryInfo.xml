@@ -1,7 +1,0 @@
-<RepositoryInfo>
-  <SimpleGitVersion StartingVersion="21.0.0-alpha">
-    <Branches>
-      <Branch Name="develop" CIVersionMode="LastReleaseBased" VersionName="develop" />
-    </Branches>
-  </SimpleGitVersion>
-</RepositoryInfo>
