@@ -13,7 +13,7 @@
   </PropertyGroup>
   
   <!--</Doc>-->
-  <PropertyGroup>
+  <PropertyGroup Condition=" Exists('docs\Package.md') ">
     <PackageReadmeFile>Package.md</PackageReadmeFile>
   </PropertyGroup>
   <!-- The actual inclusion of Doc\Package.md (conditioned on IsPackable) is in Directory.Build.targets:

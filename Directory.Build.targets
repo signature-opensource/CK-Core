@@ -3,7 +3,7 @@
   <!-- docs\Package.md is only required for packable projects. IsPackable is resolved by this
        point (the Sdk has applied its default and the csproj body has been evaluated), unlike in
        Directory.Build.props where it is imported. -->
-  <ItemGroup Condition=" '$(IsPackable)' == 'true' ">
+  <ItemGroup Condition=" '$(IsPackable)' == 'true' AND Exists('docs\Package.md') ">
     <None Include="docs\Package.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
