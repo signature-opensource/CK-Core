@@ -1,8 +1,8 @@
 <Project>
-  <!--<BasicDefinitions>: provides simple and useful definitions.-->
+
   <PropertyGroup>
-    <!-- See https://www.meziantou.net/csharp-compiler-strict-mode.htm -->
-    <Features>strict</Features>
+    <!-- See https://github.com/dotnet/roslyn/blob/main/docs/compilers/CSharp/Warnversion%20Warning%20Waves.md -->
+    <WarningLevel>9999</WarningLevel>
     <!-- Nullable Reference Type is not an option. -->
     <Nullable>enable</Nullable>
     <!-- Simple IsTestProject and IsInTestsFolder variables. -->
@@ -10,71 +10,77 @@
     <IsInTestsFolder Condition="$(MSBuildProjectDirectory.Contains('\Tests\')) Or $(MSBuildProjectDirectory.Contains('/Tests/'))">true</IsInTestsFolder>
     <!-- SolutionDir is defined by Visual Studio, we unify the behavior here. -->
     <SolutionDir Condition=" '$(SolutionDir)' == '' ">$([System.IO.Path]::GetDirectoryName($(MSBuildThisFileDirectory)))/</SolutionDir>
-    <!-- CakeBuild drives the standard ContinuousIntegrationBuild that is used. -->
-    <ContinuousIntegrationBuild Condition=" '$(CakeBuild)' == 'true' ">true</ContinuousIntegrationBuild>
-    <!-- InformationalVersion is either the Zero version or provided by the CodeCakeBuilder when in CI build). -->
-    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
-    <!-- Includes the .pdb in package. -->
-    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
+  
+  <!--</Doc>-->
+  <PropertyGroup Condition=" Exists('docs\Package.md') ">
+    <PackageReadmeFile>Package.md</PackageReadmeFile>
+  </PropertyGroup>
+  <!-- The actual inclusion of Doc\Package.md (conditioned on IsPackable) is in Directory.Build.targets:
+       IsPackable is not yet resolved at this point (Directory.Build.props is imported before the
+       csproj body and the Sdk sets its default), so the condition has to live in the .targets file. -->
+  <!--</Doc>-->
+
+  <!--<ReproducibleBuilds>:https://github.com/dotnet/reproducible-builds. SourceLink is automatically managed by this package.-->
   <ItemGroup>
-    <SourceRoot Condition=" '$(SourceRoot)' == '' " Include="$(SolutionDir)" />
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.39" PrivateAssets="All" />
   </ItemGroup>
-  <!--</BasicDefinitions>-->
-  <!--<StandardProperties>-->
+  <Sdk Name="DotNet.ReproducibleBuilds.Isolated" Version="1.2.39" />
   <PropertyGroup>
-    <RepositoryUrl>https://github.com/signature-opensource/CK-Core</RepositoryUrl>
-    <ProductName>CK</ProductName>
-    <Company>Signature Code</Company>
-    <Authors>Signature Code</Authors>
-    <Copyright>Copyright Signature-Code 2007-$([System.DateTime]::UtcNow.ToString("yyyy"))</Copyright>
-    <!--Removes annoying Pack warning: The package version ... uses SemVer 2.0.0 or components of SemVer 1.0.0 that are not supported on legacy clients...-->
-    <NoWarn>NU5105</NoWarn>
-    <!--Considering .net6 'global using' to be an opt-in (simply reproduce this with 'enable' in the csproj if needed).-->
-    <ImplicitUsings>disable</ImplicitUsings>
-    <!--Nullable Reference Type should always be used!-->
-    <Nullable>enable</Nullable>
-    <PackageIcon>PackageIcon.png</PackageIcon>
+    <!-- InformationalVersion is either the Zero version or provided by CKli. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="$(SolutionDir)Common/PackageIcon.png" Pack="true" PackagePath="\" Visible="false" />
-  </ItemGroup>
-  <!--</StandardProperties>-->
-  <!--<ZeroVersion>: When not building from the CI, assemblies always use the ZeroVersion (see CSemVer.InformationalVersion).-->
-  <PropertyGroup Condition=" '$(ContinuousIntegrationBuild)' != 'true' ">
+  <!--</ReproducibleBuilds>-->
+
+  <!--<ZeroVersion>: Use the ZeroVersion (see CSemVer.InformationalVersion) except when specified on the command line by CKli.-->
+  <PropertyGroup>
     <Version>0.0.0-0</Version>
     <AssemblyVersion>0.0.0</AssemblyVersion>
     <FileVersion>0.0.0.0</FileVersion>
     <InformationalVersion>0.0.0-0/0000000000000000000000000000000000000000/0001-01-01 00:00:00Z</InformationalVersion>
   </PropertyGroup>
   <!--</ZeroVersion>-->
-  <!--<GenerateDocumentation>: When in IsInTestsFolder and in Release or during ContinuousIntegrationBuild builds. Each project can override GenerateDocumentationFile property. -->
+
+  <!--<StandardProperties>-->
+  <PropertyGroup>
+    <ProductName>CK</ProductName>
+    <Company>Signature Code</Company>
+    <Authors>Signature Code</Authors>
+    <Copyright>Copyright Signature-Code 2007-$([System.DateTime]::UtcNow.ToString("yyyy"))</Copyright>
+    <!--Removes annoying Pack warning: The package version ... uses SemVer 2.0.0 or components of SemVer 1.0.0 that are not supported on legacy clients...-->
+    <NoWarn>NU5105</NoWarn>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageIcon>PackageIcon.png</PackageIcon>
+    <!--Considering .net6 'global using' to be an opt-in (simply reproduce this with 'enable' in the csproj if needed).-->
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(SolutionDir)Common/PackageIcon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+  <!--</StandardProperties>-->
+
+  
+  <!--<GenerateDocumentation>: is done by default when in Release and during ContinuousIntegrationBuild builds and not IsInTestsFolder. -->
   <PropertyGroup Condition=" '$(GenerateDocumentationFile)' == '' And '$(IsInTestsFolder)' != 'true' And ('$(ContinuousIntegrationBuild)' == 'true' Or '$(Configuration)' == 'Release') ">
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <!--</GenerateDocumentation>-->
-  <!--<Analyzers>: This analyzer provides very welcome guidelines about async and threading issues.-->
-  <ItemGroup Condition=" '$(MSBuildProjectName)' != 'CodeCakeBuilder' ">
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.14.15" PrivateAssets="All" IncludeAssets="runtime;build;native;contentfiles;analyzers" />
-  </ItemGroup>
-  <!--</Analyzers>-->
-  <!--<ReproducibleBuilds>-->
-  <!--Enable Deterministic build. https://github.com/dotnet/reproducible-builds. SourceLink is automatically managed by this package.-->
-  <ItemGroup>
-    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.25" PrivateAssets="All" />
-  </ItemGroup>
-  <!--Guaranty that the build is isolated. https://github.com/dotnet/reproducible-builds#dotnetreproduciblebuildsisolated-documentation-and-nuget-package-->
-  <Sdk Name="DotNet.ReproducibleBuilds.Isolated" Version="1.2.25" />
-  <!--</ReproducibleBuilds>-->
-  <!--<_CopyXmlDocFiles>:
-    It's a mess... See  https://github.com/dotnet/sdk/issues/1458#issuecomment-695119194
-    This solution works and filters out System and Microsoft packages.
-    Not sure the .Net 7 solution will enable this: see https://github.com/dotnet/sdk/issues/1458#issuecomment-1265262224-->
-  <Target Name="_CopyXmlDocFiles" AfterTargets="ResolveReferences" Condition=" '$(MSBuildProjectName)' != 'CodeCakeBuilder' ">
+
+  <!--<CopyDocumentationFiles>: uses https://github.com/dotnet/sdk/issues/1458#issuecomment-1265262224 -->
+  <PropertyGroup>
+    <CopyDocumentationFilesFromPackages>true</CopyDocumentationFilesFromPackages>
+  </PropertyGroup> 
+  <Target Name="_FilterDocumentationFiles" AfterTargets="ResolvePackageAssets">
     <ItemGroup>
-      <XmlDocFiles Include="@(ReferencePath-&gt;'%(RootDir)%(Directory)%(Filename).xml')" Condition="!( $([System.String]::new('%(FileName)').StartsWith('System.'))                                  Or                                  $([System.String]::new('%(FileName)').StartsWith('Microsoft.'))                                  Or                                  $([System.String]::new('%(FileName)').StartsWith('CommunityToolkit.'))                                  Or                                  '%(FileName)' == 'netstandard'                                )" />
+      <ReferenceCopyLocalPaths
+        Remove="@(ReferenceCopyLocalPaths)"
+        Condition="
+          $([System.String]::Copy('%(ReferenceCopyLocalPaths.NuGetPackageId)').StartsWith('Microsoft.'))
+          or
+          $([System.String]::Copy('%(ReferenceCopyLocalPaths.NuGetPackageId)').StartsWith('System.'))
+        " />
     </ItemGroup>
-    <Copy SourceFiles="@(XmlDocFiles)" Condition="Exists('%(FullPath)')" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>
-  <!--</_CopyXmlDocFiles>-->
+  <!--</CopyDocumentationFiles>-->
+  
 </Project>
