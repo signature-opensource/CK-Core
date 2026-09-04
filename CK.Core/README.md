@@ -13,7 +13,7 @@ See [CK.Core/Completable](Completable/).
 ## "Match and Forward" pattern
 See [CK.Core/Matcher](Matcher/).
 
-## CKBinaryReader/Writer, Simple/VersionedSerializable and IUtf8JsonWritable
+## CKBinaryReader/Writer, Simple/VersionedSerializable
 See [CK.Core/SimpleSerialization](SimpleSerialization/) and [CK.Core/Json](Json/).
 
 ## CoreApplicationIdentity
@@ -22,16 +22,50 @@ See [CK.Core/CoreApplicationIdentity](CoreApplicationIdentity/).
 ## CKTrait
 
 CKTrait handle the combination of different tags (strings) in a deterministic an thread safe manner. 
-Traits are normalized and ordered strings combinations (*"Sql|DB access|Subscription" == "DB access|Sql|Subscription"* and *"DB access|Sql"* is greater than *"Sql"*):
-a total order exists on the set of traits combinations based on lexicographical order for atomic
-trait and the number of traits in a composite.
+Traits are normalized and ordered strings combinations (*"Sql|DB access|Subscription" == "DB access|Sql|Subscription"*
+and *"DB access|Sql"* is greater than *"Sql"*): a total order exists on the set of trait combinations.
+`CompareTo` applies three criteria in this order - the `CKTraitContext` first, then the **number** of
+atomic traits (more is greater, which is what makes *"DB access|Sql"* the greater above), and only
+then the string representation, compared in **reverse** ordinal order.
 They support union, intersect, except and symmetric except in O(n).
 
 Traits exist in a `CKTraitContext` that defines their separator (typically ',', '+' or '|') and,
 thanks to their name, can be defined independently but resolves to the same context (this allows 
 references to the same context to be defined and used transparently from totally independent modules/assemblies)
 
-## DatetimeStamp
+Traits are created from a context and the set operations read as you would expect - except for one
+detail worth seeing:
+
+```csharp
+CKTraitContext c = CKTraitContext.Create( "Test", '+' );
+
+CKTrait m1 = c.FindOrCreate( "Beta+Alpha+Fridge+Combo" );
+CKTrait m2 = c.FindOrCreate( "Xtra+Combo+Another+Fridge+Alt" );
+
+m1.Union( m2 ).ToString().ShouldBe( "Alpha+Alt+Another+Beta+Combo+Fridge+Xtra" );
+m1.Intersect( m2 ).ToString().ShouldBe( "Combo+Fridge" );
+m1.Except( m2 ).ToString().ShouldBe( "Alpha+Beta" );
+m2.Except( m1 ).ToString().ShouldBe( "Alt+Another+Xtra" );
+
+// The detail: results are interned, so the operation is commutative *by reference*.
+m2.Union( m1 ).ShouldBeSameAs( m1.Union( m2 ) );
+m2.Intersect( m1 ).ShouldBeSameAs( m1.Intersect( m2 ) );
+
+// Interning holds on creation too: the spelling does not matter.
+c.FindOrCreate( "Alpha+Beta" ).ShouldBeSameAs( c.FindOrCreate( "Beta+Alpha" ) );
+```
+
+`m1` was created from `"Beta+Alpha+Fridge+Combo"` and every result above comes out sorted: that is the
+normalization at work. And because a combination is interned in its context, comparing two traits for
+equality is a reference comparison, and using one as a dictionary key costs nothing.
+
+Note `Except` is *not* commutative - the two lines above differ - while `Union` and `Intersect` return
+the very same instance either way. From
+[`CKTraitTests`](../Tests/CK.Core.Tests/CKTraitTests.cs) - the block above gathers assertions from
+four of its test methods, each using a context built the same way, rather than quoting one; the types are
+[`CKTrait`](CKTrait.cs) and [`CKTraitContext`](CKTraitContext.cs).
+
+## DateTimeStamp
 
 Very simple readonly struct that is a DateTime and a byte uniquifier.
 
