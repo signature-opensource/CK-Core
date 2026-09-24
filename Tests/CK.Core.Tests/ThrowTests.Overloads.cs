@@ -3,6 +3,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Frozen;
 
 namespace CK.Core.Tests;
 
@@ -16,8 +17,9 @@ public partial class ThrowTests
         TestEmptyArg( "string" ).ShouldBe( "aString" );
         TestEmptyArg( "enumerable".Select( c => c ) ).ShouldBe( "anEnumerable" );
         TestEmptyArg( (System.Collections.IEnumerable)("enumerable".Select( c => c )) ).ShouldBe( "aLegacyEnumerable" );
-        TestEmptyArg( new char[] { 'a' } ).ShouldBe( "aROCollection" );
-        TestEmptyArg( new int[] { 1 } ).ShouldBe( "aROCollection" );
+        TestEmptyArg( new char[] { 'a' } ).ShouldBe( "aROSpan" );
+        TestEmptyArg( new int[] { 1 } ).ShouldBe( "aROSpan" );
+        TestEmptyArg( (new int[] { 1 }).ToFrozenSet() ).ShouldBe( "aROCollection" );
 
         Span<char> span = new char[] { 'a' }.AsSpan();
         TestEmptyArg( span ).ShouldBe( "aSpan" );
