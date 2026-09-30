@@ -453,13 +453,13 @@ public sealed partial class CoreApplicationIdentity
     public static bool IsValidPartyName( ReadOnlySpan<char> value )
     {
         if( value.Length == 0 ) return false;
-        char first = value[0];
-        if( first == '$' )
+        if( value[0] == '$' )
         {
             value = value.Slice( 1 );
             if( value.Length == 0 ) return false;
         }
         if( value.Length > PartyNameMaxLength ) return false;
+        char first = value[0];
         if( Char.IsDigit( first ) || first == '-' || first == '_' ) return false;
         char last = value[value.Length - 1];
         if( last == '-' || last == '_' ) return false;

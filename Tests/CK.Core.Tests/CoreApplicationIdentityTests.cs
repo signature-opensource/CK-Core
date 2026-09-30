@@ -35,6 +35,13 @@ public class CoreApplicationIdentityTests
         CoreApplicationIdentity.IsValidPartyName( "-A" ).ShouldBeFalse();
         CoreApplicationIdentity.IsValidPartyName( "A-" ).ShouldBeFalse();
         CoreApplicationIdentity.IsValidPartyName( new string( 'P', CoreApplicationIdentity.PartyNameMaxLength + 1 ) ).ShouldBeFalse();
+        CoreApplicationIdentity.IsValidPartyName( "1A" ).ShouldBeFalse();
+        // The leading '$' is ignored: the first character rules apply to what follows it.
+        CoreApplicationIdentity.IsValidPartyName( "$1A" ).ShouldBeFalse();
+        CoreApplicationIdentity.IsValidPartyName( "$_A" ).ShouldBeFalse();
+        CoreApplicationIdentity.IsValidPartyName( "$-A" ).ShouldBeFalse();
+        CoreApplicationIdentity.IsValidPartyName( "$$A" ).ShouldBeFalse();
+        CoreApplicationIdentity.IsValidPartyName( "$" + new string( 'P', CoreApplicationIdentity.PartyNameMaxLength + 1 ) ).ShouldBeFalse();
 
         CoreApplicationIdentity.IsValidPartyName( "A" ).ShouldBeTrue();
         CoreApplicationIdentity.IsValidPartyName( "A_B" ).ShouldBeTrue();
