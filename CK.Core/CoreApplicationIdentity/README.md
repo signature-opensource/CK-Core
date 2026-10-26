@@ -42,8 +42,8 @@ All names are case sensitive, PascalCase convention should be use.
 
 - DomainName defaults to `"Undefined"` and cannot be empty. It may a a path (contains '/'). Its maximal length is 127 characters.
 - EnvironmentName defaults to `"#Dev"` and cannot be empty (`"#Development"` is normalized to `"#Dev"`). Its maximal length is 31 characters.
-- PartyName has no defaults. It cannot be empty and has to be set (ultimately it can be set to `"Unknown"` but this should barely happen).
-  Its maximal length is 31 characters.
+- PartyName cannot be empty. When not set, it is derived from the process path (`Builder.PartyNameFromProcessPath( Environment.ProcessPath )`)
+  and ultimately defaults to `"Unknown"`. Its maximal length is 31 characters.
 
 EnvironmentName and PartyName are "identifiers": the can only contain 'A'-'Z', 'a'-'z', '0'-'9', '-' and '\_'
 characters and must not start with a digit, and not start or end with '_' or '-'.
@@ -83,7 +83,9 @@ public static bool TryParseFullName( ReadOnlySpan<char> fullName,
 
 ## Initialization and usage
 
-The usage can hardly be simpler: `CoreApplicationIdentity.Instance` is a singleton with the 6 basic informations.
+The usage can hardly be simpler: `CoreApplicationIdentity.Instance` is a singleton that exposes `DomainName`,
+`EnvironmentName`, `PartyName`, `ContextDescriptor`, `FullName`, `ContextualId` (a hash of the full name and the context descriptor),
+`PartyContextualName` and `PartyInstanceName`. The `InstanceId` is static: it is available as soon as the process starts.
 
 Initializations is a little bit trickier since this must be an immutable information: one shouldn't be able to use it before
 it is built and one shouldn't modify it once built.
@@ -95,7 +97,8 @@ To configure the identity `Configure` or `TryConfigure` before its very first us
   /// Configure the application identity if it's not yet initialized or throws an <see cref="InvalidOperationException"/> otherwise.
   /// </summary>
   /// <param name="configurator">The configuration action.</param>
-  public static void Configure( Action<Builder> configurator )
+  /// <param name="initialize">Whether <see cref="Initialize()"/> should be called to lock the identity.</param>
+  public static void Configure( Action<Builder> configurator, bool initialize = false )
   {
     // ...
   }
@@ -110,6 +113,9 @@ To configure the identity `Configure` or `TryConfigure` before its very first us
     // ...
   }
 ``` 
+
+With `initialize: true`, `Configure` calls `Initialize()` right after the configurator: the identity is built and locked
+and the `OnInitialized` callbacks are called.
 
 For code that wants to be safe regarding any deferred initialization of the identity, they can use the `IsInitialized` property
 and/or the `OnInitialized` method that handles callbacks.

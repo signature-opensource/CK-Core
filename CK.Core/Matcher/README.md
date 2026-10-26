@@ -172,8 +172,7 @@ static bool TryMatch( ref ReadOnlySpan<char> head, out DateTimeStamp time, bool 
     byte uniquifier = 0;
     if( head.TryMatch( '(' ) )
     {
-        if( !head.TryMatchInt32( out int u, 0, 255 ) || !head.TryMatch( ')' ) ) goto error;
-        uniquifier = (byte)u;
+        if( !head.TryMatchInteger( out uniquifier ) || !head.TryMatch( ')' ) ) goto error;
     }
     if( !parse || head.IsEmpty )
     {
@@ -266,12 +265,12 @@ public static bool TryMatch( ref ROSpanCharMatcher m, out LEDColor color )
 The `ROSpanCharMatcher` exposes:
  - its mutable head directly, so it can be moved freely (and without overhead).
  - a set of methods that manage errors and expectations:
-   - `AddExpectations` describes the expected input and always returns false.
+   - `AddExpectation` describes the expected input and always returns false.
    - `AddError` signals an error and always returns false.
-   - `OpenExpectation` returns a IDisposable and enables to give a name to a complex subordinated pattern and 
+   - `OpenExpectations` returns a IDisposable and enables to give a name to a complex subordinated pattern and 
    structures the expectations/errors in a tree-like structure (more on this below).
    - `SetSuccess` that always returns true and must be called to clear any pending errors/expectations 
-   (at the current `OpenExpectation` level). 
+   (at the current `OpenExpectations` level). 
 
 Just like `TryParse` standard implementations, this new `TryMatch` can rely on the basic `ReadOnlySpan<char>` one so we can
 keep both versions without overhead.
@@ -470,25 +469,22 @@ The `ROSpanCharMatcher` offers a basic support for parsing JSON:
 /// and any combination of them.
 /// White spaces and JS comments (//... or /* ... */) are skipped.
 /// </summary>
-/// <param name="this">This <see cref="StringMatcher"/>.</param>
 /// <param name="value">
 /// A list of nullable objects (for array), a list of tuples (string,object?) for object or
 /// a double, string, boolean or null (for null).
 /// </param>
 /// <returns>True on success, false on error.</returns>
-public bool TryMatchAnyJSON( out object? value )
+public bool TryMatchAnyJson( out object? value )
 ```
 
 Matching the invalid input "[null,,]" gives the following error:
 
 ```
-@1,1 - Expected: Any JSON token or object (TryMatchAnyJSON)
-  @1,2 - Expected: JSON array values (TryMatchJSONArrayContent)
-    @1,7 - Expected: Any JSON token or object (TryMatchAnyJSON)
+@1,1 - Expected: Any JSON token or object (TryMatchAnyJson)
+  @1,2 - Expected: JSON array values (TryMatchJsonArrayContent)
+    @1,7 - Expected: Any JSON token or object (TryMatchAnyJson)
                        String 'true' (TryMatch)
                  Or:   String 'false' (TryMatch)
-                 Or:   JSON string or null (TryMatchJSONQuotedString)
-                 Or:   Floating number (TryMatchDouble)
+                 Or:   Valid JSON string or null (TryMatchJsonQuotedString)
+                 Or:   Floating number 'Double' (TryMatchFloatingNumber)
 ```
-
-TODO: more complex JSON sample with an error inside.

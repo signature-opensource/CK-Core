@@ -1,9 +1,11 @@
 # CK-Core
 
-[![nuget](https://img.shields.io/nuget/v/CK.Core.svg?label=CK.Core)](https://www.nuget.org/packages/CK.Core/)
 [![Licence](https://img.shields.io/github/license/signature-opensource/CK-Core.svg)](LICENSE)
 
-Contains [CK.Core](CK.Core/README.md), a single assembly of basic helpers and tools that should
-ideally not exist: `NormalizedPath`, `CKTrait`, `DateTimeStamp`, `GrantLevel`, the `Throw` guards,
-`Completable`/`Completion`, the `CKBinaryReader`/`Writer` serialization helpers, the "match and
-forward" span matchers, `CoreApplicationIdentity`, the SHA value types and `SimpleServiceContainer`.
+This repository contains the most basic package of the CK stack: helpers and tools that should ideally be in the .NET framework itself.
+
+| Package | Description | Latest stable |
+|---------|-------------|---------------|
+| [CK.Core](CK.Core/README.md) | Basic helpers and tools that should ideally not exist. | [![nuget](https://img.shields.io/nuget/v/CK.Core.svg?label=CK.Core)](https://www.nuget.org/packages/CK.Core/) |
+
+Licensed under the MIT license - see [LICENSE](LICENSE).

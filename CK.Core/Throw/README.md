@@ -11,7 +11,7 @@ public ObjectPool( ICKBinaryWriter w, IEqualityComparer<T>? comparer = null )
     // …
 }
 ```
-Recently (C#6), the `nameof` operator has been introduced:
+The `nameof` operator avoids the hard-coded parameter name:
 
 ```csharp
 if( w == null ) throw new ArgumentNullException( nameof( w ) );
@@ -24,7 +24,7 @@ And there is another hidden impact: a small method that could be inlined (https:
 That's why in the vast majority of "serious" code bases, you'll find small ThrowHelper internal and static: 83 similar
 classes in .Net, just for "ThrowHelper" but there are others (so go and see them here: https://source.dot.net/#q=ThrowHelper).
 
-Lately, a static method has appeared on `ArgumentNullException`:
+The BCL offers a static method on `ArgumentNullException`:
 
 ```csharp
 ArgumentNullException.ThrowIfNull( w, nameof( w ) );
@@ -42,11 +42,11 @@ to understand the difference between `IsBetween` and `IsInRange`).
 It's not super easy to pick the right one and sometimes the constraint cannot be expressed with one call...
 Could there be a simpler solution?
 
-## A simpler approach in Net6
+## A simpler approach: the `Throw` class
 
-There's a newcomer in Net6 (C#10 actually): the `CallerArgumentExpressionAttribute`.
-Thanks to it, and after grinding several options and inspired by CommunityToolkit.Diagnostics implementation,
-CK.Core now offers a ThrowHelper AND Guards in a single static class `Throw`:
+The `CallerArgumentExpressionAttribute` lets a method capture the source text of an argument.
+Built on it, and inspired by the CommunityToolkit.Diagnostics implementation,
+CK.Core offers a ThrowHelper AND Guards in a single static class `Throw`:
 
 - For simple checks, there is no more `nameof` to put: the parameter name is the expression itself.
 ```csharp
@@ -71,14 +71,14 @@ __Raises `ArgumentException`__: `Invalid argument: 'o is string[] array && array
 ```csharp
 Throw.CheckOutOfRangeArgument( "Come on!", index is >= 0 and <= 15 );
 ```
-__Raises `OutOfRangeArgumentException`__: `Come on! (Parameter 'index is >= 0 and <= 15')`
+__Raises `ArgumentOutOfRangeException`__: `Come on! (Parameter 'index is >= 0 and <= 15')`
 
   - For strings, `Throw.CheckNotNullOrEmptyArgument` and `Throw.CheckNotNullOrWhiteSpaceArgument` raise an `ArgumentNullException`
   (if the value is null) and an `ArgumentException` otherwise.
 
   - `Throw.CheckNotNullOrEmptyArgument` is also available for "collections": all `IEnumerable`, `IEnumerable<T>` but also `Span<T>`, 
   `Memory<T>` and their ReadOnly versions (technically, Span and Memory are structs - Value type - 
-  and cannot be "null", but I found it more convenient to use the same overload than a specific "CheckNotEmpty").
+  and cannot be "null", but using the same overload is more convenient than a specific "CheckNotEmpty").
 
 Arguments are not the only things that can go wrong. Your code has a *State* that can be invalid regarding the requested operation:
 this is the `InvalidOperationException`:
@@ -104,8 +104,9 @@ void FillFile()
 __Raises `InvalidDataException`__: `This file must be empty. (Expression: 'File.ReadAllText( ThisFile() ).Length == 0')`
 
 
-Of course, this `static class Throw`, as its name indicates, is also a "ThrowHelper" that supports the most common exceptions. 
-(This will be extended as needed.)
+Of course, this `static class Throw`, as its name indicates, is also a "ThrowHelper" that supports the most common exceptions
+(`ArgumentException`, `ArgumentNullException`, `ArgumentOutOfRangeException`, `InvalidOperationException`, `InvalidDataException`,
+`NotSupportedException`, `ObjectDisposedException`, etc.).
 
 
 ## In switch expressions or where a value is mandatory

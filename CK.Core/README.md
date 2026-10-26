@@ -60,9 +60,8 @@ normalization at work. And because a combination is interned in its context, com
 equality is a reference comparison, and using one as a dictionary key costs nothing.
 
 Note `Except` is *not* commutative - the two lines above differ - while `Union` and `Intersect` return
-the very same instance either way. From
-[`CKTraitTests`](../Tests/CK.Core.Tests/CKTraitTests.cs) - the block above gathers assertions from
-four of its test methods, each using a context built the same way, rather than quoting one; the types are
+the very same instance either way. Adapted from
+[`CKTraitTests`](../Tests/CK.Core.Tests/CKTraitTests.cs); the types are
 [`CKTrait`](CKTrait.cs) and [`CKTraitContext`](CKTraitContext.cs).
 
 ## DateTimeStamp
@@ -131,10 +130,3 @@ or as a decorator.
 ## ISystemClock
 
 Yet another system clock. See https://github.com/dotnet/extensions/issues/151.
-
-## What is not here
-
-The README this file comes from carried a section on the "duck typed" contracts of the automatic
-dependency injection, pointing at a `CK.Core/AutomaticDI/` folder. That folder does not exist and
-`IAutoService` and its siblings are not declared in this assembly - they moved to another package.
-The dead link is removed rather than repaired: it is not this package to document them.

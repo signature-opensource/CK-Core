@@ -3,8 +3,10 @@
 CK.Core defines 2 interfaces that supports "simple" binary serialization based on
 the [ICKBinaryReader](ICKBinaryReader.cs) and [ICKBinaryWriter](ICKBinaryWriter.cs).
 
-For more complex support (support of object references, type mutations and other features), the
-CK.BinarySerialization package with its `BinarySerializer` and `BinarySerializer` must be used.
+This simple serialization doesn't support object references, type mutations and other advanced features.
+For an example of a package built on these interfaces that brings them, see the higher-level
+[CK.BinarySerialization](https://github.com/signature-opensource/CK-BinarySerialization/blob/stable/CK.BinarySerialization/README.md)
+package and its `BinarySerializer` and `BinaryDeserializer`.
 
 ## The ICKBinaryReader/Writer
 
@@ -161,8 +163,7 @@ struct ThingStruct : ICKVersionedBinarySerializable
 }
 ```
 
-This can **only be applied to value types or sealed classes**. Unless a Code Analyzer is written one day to check this,
-absolutely no check is done in CK.Core. But this check is implemented in CK.BinarySerialization package: an `InvalidOperationException` will
+This can **only be applied to value types or sealed classes**. No check is done in CK.Core. This check is implemented in CK.BinarySerialization package: an `InvalidOperationException` will
 be raised  if non sealed class appears in a serialization or deserialization session.
 
 To overcome this limitation, a more complex model is required: this is what the CK.BinarySerialization.Sliced package
@@ -223,11 +224,12 @@ CK.BinarySerialization always uses the Versioned interface (since it automatical
 and the version is a part of this information).
 
 ## SimpleSerializable static helper class: DeepClone for free
-This static class exposes 2 extension methods that can serialize simple and versioned objects to a byte array:
+This static class exposes 2 extension methods that serialize simple and versioned objects (to a byte array
+and to a `Memory<byte>` respectively):
 
 ```csharp
 public static byte[] SerializeSimple( this ICKSimpleBinarySerializable @this )
-public static byte[] SerializeVersioned( this ICKVersionedBinarySerializable @this )
+public static Memory<byte> SerializeVersioned( this ICKVersionedBinarySerializable @this )
 ```
 
 And 6 helpers that can deserialize simple and versioned objects from/to a byte array,
@@ -266,19 +268,20 @@ public static T? DeepClone<T>( this T? @this ) where T : ICKSimpleBinarySerializ
 ```
 
 ## SimpleSerializable static helper class: DeepEquals for free
-This static class also exposes 2 methods that uses serialization to check for deep equality
-of the same object:
+This static class also exposes methods that use serialization to check for deep equality
+of two objects (two null instances are equal), or of the data produced by two writes:
 
 ```csharp
 public static bool DeepEqualsSimple<T>( T? o1, T? o2 ) where T : ICKSimpleBinarySerializable
 public static bool DeepEqualsVersioned<T>( T? o1, T? o2 ) where T : ICKVersionedBinarySerializable
+public static bool DeepEqualsSimple( Action<ICKBinaryWriter> w1, Action<ICKBinaryWriter> w2 )
 ```
 In addition, a `DeepEquals()` extension method is available on any `ICKSimpleBinarySerializable` object:
 ```csharp
-public static bool DeepEquals<T>( this T? @this, T? other ) where T : ICKSimpleBinarySerializable => DeepEqualsSimple( @this, other );```
+public static bool DeepEquals<T>( this T? @this, T? other ) where T : ICKSimpleBinarySerializable => DeepEqualsSimple( @this, other );
 ```
 
-These methods uses the static `Util.CreateCheckedWriteStream( RecyclableMemoryStream s )` that creates
+These methods use the static `CheckedWriteStream.Create( RecyclableMemoryStream s )` that creates
 a [`CheckedWriteStream`](../CheckedWriteStream.cs). This helper can be used to implement other equality checks
-base on binary content.
+based on binary content.
 
