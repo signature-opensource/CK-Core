@@ -132,13 +132,13 @@ public sealed partial class CoreApplicationIdentity
 
     /// <summary>
     /// Gets this <see cref="PartyName"/>.C<see cref="ContextualId"/>.
-    /// Since PartyName cannot contain '.', the "-C" acts as an easy separator that can be used.
+    /// Since PartyName cannot contain '.', the ".C" acts as an easy separator that can be used.
     /// </summary>
     public string PartyContextualName { get; }
 
     /// <summary>
     /// Gets this <see cref="PartyName"/>.I<see cref="InstanceId"/>.
-    /// Since PartyName cannot contain '.', the "-I" acts as an easy separator that can be used.
+    /// Since PartyName cannot contain '.', the ".I" acts as an easy separator that can be used.
     /// </summary>
     public string PartyInstanceName { get; }
 

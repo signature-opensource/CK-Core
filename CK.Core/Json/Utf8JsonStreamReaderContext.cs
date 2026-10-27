@@ -114,7 +114,7 @@ public sealed class Utf8JsonStreamReaderContext : IDisposableUtf8JsonReaderConte
     /// <param name="initialBufferSize">
     /// (Ignored for RecyclableMemoryStream.) Initial buffer size (will grow as needed). The buffer size is only driven by
     /// the longest token (plus some white space) to read.
-    /// Currently, the <c>>ArrayPool&lt;byte&gt;.Shared</c> that is used returns at least 16 bytes: the
+    /// Currently, the <c>ArrayPool&lt;byte&gt;.Shared</c> that is used returns at least 16 bytes: the
     /// initial buffer size will at least be 16.
     /// </param>
     /// <param name="maxBufferSize">
@@ -153,13 +153,13 @@ public sealed class Utf8JsonStreamReaderContext : IDisposableUtf8JsonReaderConte
     /// <param name="options">The Json reader options.</param>
     /// <param name="r">The initial reader.</param>
     /// <param name="leaveOpened">
-    /// True to let the stream opened when disposing the returned <see cref="Utf8JsonReader"/>.
+    /// True to let the stream opened when disposing the returned <see cref="Utf8JsonStreamReaderContext"/>.
     /// By default, the stream is disposed.
     /// </param>
     /// <param name="initialBufferSize">
     /// Initial buffer size (will grow as needed). The buffer size is only driven by
     /// the longest token (plus some white space) to read.
-    /// Currently, the <c>>ArrayPool&lt;byte&gt;.Shared</c> that is used returns at least 16 bytes: the
+    /// Currently, the <c>ArrayPool&lt;byte&gt;.Shared</c> that is used returns at least 16 bytes: the
     /// initial buffer size will at least be 16.
     /// </param>
     /// <param name="maxBufferSize">The maximal buffer size to use (for the bigger token).</param>

@@ -197,7 +197,6 @@ public static class SimpleSerializable
     /// <summary>
     /// Tests whether 2 writes produce the same data.
     /// </summary>
-    /// <typeparam name="T">The object's type.</typeparam>
     /// <param name="w1">The first writer.</param>
     /// <param name="w2">The second writer.</param>
     /// <returns>True if the 2 writes produced the same data, false otherwise.</returns>
