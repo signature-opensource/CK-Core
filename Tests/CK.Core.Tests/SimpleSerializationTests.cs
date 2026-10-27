@@ -104,6 +104,17 @@ public class SimpleSerializationTests
         SimpleSerializable.DeepCloneVersioned( o ).ShouldBeEquivalentTo( o );
     }
 
+    [Test]
+    public void SerializeVersioned_result_is_not_altered_by_a_subsequent_serialization()
+    {
+        // The serialization stream comes from a pool: its buffer must not be returned.
+        var first = new Thing( "first" ).SerializeVersioned();
+        var snapshot = (byte[])first.Clone();
+        new Thing( "SECOND!" ).SerializeVersioned();
+        first.ShouldBe( snapshot );
+        SimpleSerializable.DeserializeVersioned<Thing>( first ).Name.ShouldBe( "first" );
+    }
+
 
     /// <summary>
     /// Supporting both interfaces enables simple scenario to use the embedded version

@@ -224,12 +224,11 @@ CK.BinarySerialization always uses the Versioned interface (since it automatical
 and the version is a part of this information).
 
 ## SimpleSerializable static helper class: DeepClone for free
-This static class exposes 2 extension methods that serialize simple and versioned objects (to a byte array
-and to a `Memory<byte>` respectively):
+This static class exposes 2 extension methods that serialize simple and versioned objects to a byte array:
 
 ```csharp
 public static byte[] SerializeSimple( this ICKSimpleBinarySerializable @this )
-public static Memory<byte> SerializeVersioned( this ICKVersionedBinarySerializable @this )
+public static byte[] SerializeVersioned( this ICKVersionedBinarySerializable @this )
 ```
 
 And 6 helpers that can deserialize simple and versioned objects from/to a byte array,

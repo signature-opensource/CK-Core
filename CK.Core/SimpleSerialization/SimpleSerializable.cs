@@ -34,7 +34,7 @@ public static class SimpleSerializable
     /// </summary>
     /// <param name="this">This object.</param>
     /// <returns>The serialized bytes.</returns>
-    public static Memory<byte> SerializeVersioned( this ICKVersionedBinarySerializable @this )
+    public static byte[] SerializeVersioned( this ICKVersionedBinarySerializable @this )
     {
         Throw.CheckNotNullArgument( @this );
         using( var s = Util.RecyclableStreamManager.GetStream() )
@@ -43,7 +43,8 @@ public static class SimpleSerializable
             w.WriteNonNegativeSmallInt32( SerializationVersionAttribute.GetRequiredVersion( @this.GetType() ) );
             @this.WriteData( w );
             w.Flush();
-            return s.GetBuffer().AsMemory( 0, (int)s.Length );
+            // The stream's buffer returns to the pool when the stream is disposed: it must be copied.
+            return s.ToArray();
         }
     }
 
