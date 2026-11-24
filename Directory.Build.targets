@@ -7,4 +7,46 @@
     <None Include="docs\Package.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
+  <!--<PackageDescription>: the description of a package is the first paragraph of its docs\Package.md
+      (after its # title), without its Markdown: one source for the NuGet description and the readme.
+      A project without docs\Package.md keeps its <Description>. -->
+  <UsingTask TaskName="CKReadPackageMdDescription"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Path ParameterType="System.String" Required="true" />
+      <Description ParameterType="System.String" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var text = File.ReadAllText( Path ).Replace( "\r", "" );
+        // The # title, then the first paragraph (up to the first blank line).
+        text = Regex.Replace( text, @"^\s*#[^\n]*\n", "" );
+        text = Regex.Replace( text, @"(?s)^\s*(.*?)(\n[ \t]*\n.*)?$", "$1" );
+        // The Markdown: [text](url) is text, no backticks, no emphasis.
+        text = Regex.Replace( text, @"\[([^\]]*)\]\([^\)]*\)", "$1" );
+        text = Regex.Replace( text, @"`|\*\*|\*|(?<!\w)_(?=\S)|(?<=\S)_(?!\w)", "" );
+        Description = Regex.Replace( text, @"\s+", " " ).Trim();
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="CKDescriptionFromPackageMd"
+          BeforeTargets="GenerateNuspec"
+          Condition=" '$(IsPackable)' == 'true' AND Exists('$(MSBuildProjectDirectory)\docs\Package.md') ">
+    <CKReadPackageMdDescription Path="$(MSBuildProjectDirectory)\docs\Package.md">
+      <Output TaskParameter="Description" PropertyName="_CKPackageMdDescription" />
+    </CKReadPackageMdDescription>
+    <Warning Condition=" '$(_CKPackageMdDescription)' == '' "
+             Text="The first paragraph of docs\Package.md is empty: it is the description of the package." />
+    <Warning Condition=" $(_CKPackageMdDescription.Length) &gt; 4000 "
+             Text="The first paragraph of docs\Package.md is the description of the package: it is longer than the 4000 characters of NuGet." />
+    <PropertyGroup Condition=" '$(_CKPackageMdDescription)' != '' ">
+      <Description>$(_CKPackageMdDescription)</Description>
+      <PackageDescription>$(_CKPackageMdDescription)</PackageDescription>
+    </PropertyGroup>
+  </Target>
+  <!--</PackageDescription>-->
+
 </Project>
