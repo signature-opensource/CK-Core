@@ -13,7 +13,8 @@
   </PropertyGroup>
   
   <!--</Doc>-->
-  <PropertyGroup Condition=" Exists('docs\Package.md') ">
+  <!-- In a property condition of an imported file, a relative path doesn't resolve against the project: it is anchored. -->
+  <PropertyGroup Condition=" Exists('$(MSBuildProjectDirectory)\docs\Package.md') ">
     <PackageReadmeFile>Package.md</PackageReadmeFile>
   </PropertyGroup>
   <!-- The actual inclusion of Doc\Package.md (conditioned on IsPackable) is in Directory.Build.targets:
