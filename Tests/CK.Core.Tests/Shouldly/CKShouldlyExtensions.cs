@@ -232,7 +232,8 @@ namespace Shouldly
             catch( ShouldAssertException aEx )
             {
                 var prefix = Environment.NewLine + "  | ";
-                var offsetMessage = string.Join( prefix, aEx.Message.Split( Environment.NewLine ) );
+                // Shouldly's message has "\r\n" on every platform.
+                var offsetMessage = aEx.Message.ReplaceLineEndings( prefix );
                 throw new ShouldAssertException( $"ShouldAll failed for item n°{idx}.{prefix}{offsetMessage}" );
             }
             return actual;
