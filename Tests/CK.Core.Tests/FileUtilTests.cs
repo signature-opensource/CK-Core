@@ -15,7 +15,10 @@ namespace CK.Core.Tests;
 [TestFixture]
 public class FileUtilTests
 {
-    static string ToPlatform( string s ) => s.Replace( Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar );
+    static string ToPlatform( string s ) => s.Replace( '\\', Path.DirectorySeparatorChar ).Replace( '/', Path.DirectorySeparatorChar );
+
+    // The invalid characters of a path or a file name are the ones of the platform: outside Windows, only '\0' and '/'.
+    static int OnWindows( int index ) => OperatingSystem.IsWindows() ? index : -1;
 
     [Test]
     public void NormalizePathSeparator_uses_current_environment()
@@ -193,11 +196,11 @@ public class FileUtilTests
         CleanupDir( copyDir.FullName );
 
         CreateFiles( testDir.FullName, "azerty.png" );
-        CreateHiddenFiles( testDir.FullName, "hiddenAzerty.gif" );
+        CreateHiddenFiles( testDir.FullName, ".hiddenAzerty.gif" );
 
         FileUtil.CopyDirectory( testDir, copyDir );
-        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", "hiddenAzerty.gif" );
-        AssertContains( copyDir.FullName, Directory.GetFiles( copyDir.FullName ), "azerty.png", "hiddenAzerty.gif" );
+        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", ".hiddenAzerty.gif" );
+        AssertContains( copyDir.FullName, Directory.GetFiles( copyDir.FullName ), "azerty.png", ".hiddenAzerty.gif" );
 
         Action a = () => FileUtil.CopyDirectory( testDir, copyDir );
         a.ShouldThrow<IOException>();
@@ -205,28 +208,28 @@ public class FileUtilTests
         CleanupDir( copyDir.FullName );
 
         FileUtil.CopyDirectory( testDir, copyDir, false );
-        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", "hiddenAzerty.gif" );
+        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", ".hiddenAzerty.gif" );
         AssertContains( copyDir.FullName, Directory.GetFiles( copyDir.FullName ), "azerty.png" );
 
         CleanupDir( copyDir.FullName );
 
-        DirectoryInfo recursiveDir = Directory.CreateDirectory( testDir.FullName + @"\recDir" );
+        DirectoryInfo recursiveDir = Directory.CreateDirectory( Path.Combine( testDir.FullName, ".recDir" ) );
         CreateFiles( recursiveDir.FullName, "REC.png" );
-        CreateHiddenFiles( recursiveDir.FullName, "hiddenREC.gif" );
+        CreateHiddenFiles( recursiveDir.FullName, ".hiddenREC.gif" );
 
         FileUtil.CopyDirectory( testDir, copyDir );
-        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", "hiddenAzerty.gif" );
-        AssertContains( recursiveDir.FullName, Directory.GetFiles( recursiveDir.FullName ), "REC.png", "hiddenREC.gif" );
-        AssertContains( copyDir.FullName, Directory.GetFiles( copyDir.FullName ), "azerty.png", "hiddenAzerty.gif" );
-        AssertContains( Path.Combine( copyDir.FullName, recursiveDir.Name ), Directory.GetFiles( Path.Combine( copyDir.FullName, recursiveDir.Name ) ), "REC.png", "hiddenREC.gif" );
+        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", ".hiddenAzerty.gif" );
+        AssertContains( recursiveDir.FullName, Directory.GetFiles( recursiveDir.FullName ), "REC.png", ".hiddenREC.gif" );
+        AssertContains( copyDir.FullName, Directory.GetFiles( copyDir.FullName ), "azerty.png", ".hiddenAzerty.gif" );
+        AssertContains( Path.Combine( copyDir.FullName, recursiveDir.Name ), Directory.GetFiles( Path.Combine( copyDir.FullName, recursiveDir.Name ) ), "REC.png", ".hiddenREC.gif" );
 
         CleanupDir( copyDir.FullName );
 
         recursiveDir.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
 
         FileUtil.CopyDirectory( testDir, copyDir, false, false );
-        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", "hiddenAzerty.gif" );
-        AssertContains( recursiveDir.FullName, Directory.GetFiles( recursiveDir.FullName ), "REC.png", "hiddenREC.gif" );
+        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", ".hiddenAzerty.gif" );
+        AssertContains( recursiveDir.FullName, Directory.GetFiles( recursiveDir.FullName ), "REC.png", ".hiddenREC.gif" );
         AssertContains( copyDir.FullName, Directory.GetFiles( copyDir.FullName ), "azerty.png" );
         Directory.Exists( Path.Combine( copyDir.FullName, recursiveDir.Name ) ).ShouldBeFalse();
 
@@ -235,16 +238,16 @@ public class FileUtilTests
         recursiveDir.Attributes = FileAttributes.Directory | FileAttributes.Hidden;
 
         FileUtil.CopyDirectory( testDir, copyDir, false, true );
-        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", "hiddenAzerty.gif" );
-        AssertContains( recursiveDir.FullName, Directory.GetFiles( recursiveDir.FullName ), "REC.png", "hiddenREC.gif" );
+        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", ".hiddenAzerty.gif" );
+        AssertContains( recursiveDir.FullName, Directory.GetFiles( recursiveDir.FullName ), "REC.png", ".hiddenREC.gif" );
         AssertContains( copyDir.FullName, Directory.GetFiles( copyDir.FullName ), "azerty.png" );
         AssertContains( Path.Combine( copyDir.FullName, recursiveDir.Name ), Directory.GetFiles( Path.Combine( copyDir.FullName, recursiveDir.Name ) ), "REC.png" );
 
         CleanupDir( copyDir.FullName );
 
         FileUtil.CopyDirectory( testDir, copyDir, true, true, x => { return x.Name == "azerty.png"; }, x => { return x.Name != recursiveDir.Name; } );
-        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", "hiddenAzerty.gif" );
-        AssertContains( recursiveDir.FullName, Directory.GetFiles( recursiveDir.FullName ), "REC.png", "hiddenREC.gif" );
+        AssertContains( testDir.FullName, Directory.GetFiles( testDir.FullName ), "azerty.png", ".hiddenAzerty.gif" );
+        AssertContains( recursiveDir.FullName, Directory.GetFiles( recursiveDir.FullName ), "REC.png", ".hiddenREC.gif" );
         AssertContains( copyDir.FullName, Directory.GetFiles( copyDir.FullName ), "azerty.png" );
         Directory.Exists( Path.Combine( copyDir.FullName, recursiveDir.Name ) ).ShouldBeFalse();
 
@@ -313,13 +316,15 @@ public class FileUtilTests
         FileUtil.IndexOfInvalidFileNameChars( "a" ).ShouldBe( -1 );
         FileUtil.IndexOfInvalidFileNameChars( "ab" ).ShouldBe( -1 );
         FileUtil.IndexOfInvalidFileNameChars( "abcde" ).ShouldBe( -1 );
-        FileUtil.IndexOfInvalidFileNameChars( "a<" ).ShouldBe( 1 );
-        FileUtil.IndexOfInvalidFileNameChars( "a:" ).ShouldBe( 1 );
-        FileUtil.IndexOfInvalidFileNameChars( "ab<" ).ShouldBe( 2 );
-        FileUtil.IndexOfInvalidFileNameChars( "<a" ).ShouldBe( 0 );
-        FileUtil.IndexOfInvalidFileNameChars( "abc>" ).ShouldBe( 3 );
-        FileUtil.IndexOfInvalidFileNameChars( "abc|" ).ShouldBe( 3 );
-        FileUtil.IndexOfInvalidFileNameChars( "abc\"" ).ShouldBe( 3 );
+        FileUtil.IndexOfInvalidFileNameChars( "ab/" ).ShouldBe( 2 );
+        FileUtil.IndexOfInvalidFileNameChars( "a\0b" ).ShouldBe( 1 );
+        FileUtil.IndexOfInvalidFileNameChars( "a<" ).ShouldBe( OnWindows( 1 ) );
+        FileUtil.IndexOfInvalidFileNameChars( "a:" ).ShouldBe( OnWindows( 1 ) );
+        FileUtil.IndexOfInvalidFileNameChars( "ab<" ).ShouldBe( OnWindows( 2 ) );
+        FileUtil.IndexOfInvalidFileNameChars( "<a" ).ShouldBe( OnWindows( 0 ) );
+        FileUtil.IndexOfInvalidFileNameChars( "abc>" ).ShouldBe( OnWindows( 3 ) );
+        FileUtil.IndexOfInvalidFileNameChars( "abc|" ).ShouldBe( OnWindows( 3 ) );
+        FileUtil.IndexOfInvalidFileNameChars( "abc\"" ).ShouldBe( OnWindows( 3 ) );
     }
 
     [Test]
@@ -329,11 +334,11 @@ public class FileUtilTests
         FileUtil.IndexOfInvalidPathChars( "a" ).ShouldBe( -1 );
         FileUtil.IndexOfInvalidPathChars( "ab" ).ShouldBe( -1 );
         FileUtil.IndexOfInvalidPathChars( "abcde" ).ShouldBe( -1 );
-        FileUtil.IndexOfInvalidPathChars( "a|" ).ShouldBe( 1 );
-        FileUtil.IndexOfInvalidPathChars( "ab|" ).ShouldBe( 2 );
-        FileUtil.IndexOfInvalidPathChars( "|a" ).ShouldBe( 0 );
-        FileUtil.IndexOfInvalidPathChars( "abc|" ).ShouldBe( 3 );
-        FileUtil.IndexOfInvalidPathChars( "abc|" ).ShouldBe( 3 );
+        FileUtil.IndexOfInvalidPathChars( "a|" ).ShouldBe( OnWindows( 1 ) );
+        FileUtil.IndexOfInvalidPathChars( "ab|" ).ShouldBe( OnWindows( 2 ) );
+        FileUtil.IndexOfInvalidPathChars( "|a" ).ShouldBe( OnWindows( 0 ) );
+        FileUtil.IndexOfInvalidPathChars( "abc|" ).ShouldBe( OnWindows( 3 ) );
+        FileUtil.IndexOfInvalidPathChars( "abc|" ).ShouldBe( OnWindows( 3 ) );
         FileUtil.IndexOfInvalidPathChars( "abc\0-" ).ShouldBe( 3 );
     }
 
@@ -352,6 +357,7 @@ public class FileUtilTests
         }
     }
 
+    // A file is hidden by its attribute on Windows and by a name that starts with a dot elsewhere: the names have both.
     private void CreateHiddenFiles( string path, params string[] values )
     {
         foreach( string s in values )
