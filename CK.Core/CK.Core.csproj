@@ -2,18 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>11</LangVersion>
-    <Description>
-      CK.Core contains types and helpers that are used across different projects.
-      Main types are:
-      - NormalizedPath: Normalizes / and \ separators to /, exposes Parts and handle multiple kind of roots: / (RootedBySeparator), 'X:' or ':' (RootedByFirstPart), '//' (RootedByDoubleSeparator), or 'xx://' (RootedByURIScheme).
-      - CKTrait: Thread safe set of (immutable) string tags that support all set operations.
-      - DateTimeStamp: Simple DateTime with byte uniquifier.
-      - SimpleServiceContainer: Basic IServiceProvider implementation.
-      - HashStream and SHA1Value, SHA256Value and SHA512Value.
-      - ISystemClock and SystemClock default implementation.
-      - Completable &amp; Completion: Are "futures" or "yet another promises" (based on Task/TaskCompletionSource). Offer Covariance of the completion result and optional extension points to map errors (exceptions or cancellation) to regular results.
-      - CKBinaryReader/Writer: extend IBinaryReader/Writer with nullable support, more read/write of standard types and optional value sharing.
-    </Description>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Properties\**" />
